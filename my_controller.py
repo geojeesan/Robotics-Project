@@ -48,20 +48,25 @@ task_robot_mapping ={}
 # naive approach -  pitfall: if only one of the youbots is the closest to all targets, it allocated to all of them. 
 # solution: to track which robot is occupied and which else are free. 
 
+available_robots = def_names.copy()
 
-for task in tasks.keys():
-    shortest=['',math.inf]
-    for name in def_names:
+for task_name,task_pos in tasks.items():
+    shortest=math.inf
+    closest=None
+    for name in available_robots:
         # where is {name} ?
         pos = positions[name]
-        r_task = tasks[task]
+        r_task = tasks[task_name] # get the task
         # for a task we only want to store the robot closest to the task 
         distance = calc_distance(pos,r_task)
-        if distance<shortest[1]:
-            shortest[0]=name
-            shortest[1]=distance
-    # we found the shortest distance for this task. 
-    task_robot_mapping[task] = shortest
+        if distance<shortest and name in available_robots:
+            shortest = distance
+            closest=name
+    # if we found the closest for this task.
+    if closest:
+        task_robot_mapping[task_name] = closest
+        available_robots.remove(closest)
+        
          
 print(task_robot_mapping)
 
@@ -70,8 +75,7 @@ i = 0
 while robot.step(TIME_STEP) != -1:
 
     if i==0:
-        for task_name,assignee_list in task_robot_mapping.items():
-            assignee = assignee_list[0]
+        for task_name,assignee in task_robot_mapping.items():
             new_pos = tasks[task_name] # assign it the position of the task. 
             translation_fields[assignee].setSFVec3f(list(new_pos))
 
