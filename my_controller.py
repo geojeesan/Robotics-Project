@@ -38,15 +38,19 @@ def calc_distance(robot_pos,target_pos): # expecting a 3-tuple
 
 
 
-robot = Supervisor()  
-root_node = robot.getRoot()
+supervisor = Supervisor()  
+root_node = supervisor.getRoot()
 def_names = ['youbot1', 'youbot2', 'youbot3', 'youbot4']
-node_map = {name:robot.getFromDef(name) for name in def_names} # contains name:node pairs
+node_map = {name:supervisor.getFromDef(name) for name in def_names} # contains name:node pairs
 translation_fields = {name:node.getField('translation') for name,node in node_map.items()}
 tasks={} # global tasks list. 
+robot_states={name:'IDLE' for name in def_names}
+robot_tasks={}
+SPEED=0.05 #m/s
+THRESHOLD=0.05
 
 i = 0
-while robot.step(TIME_STEP) != -1:
+while supervisor.step(TIME_STEP) != -1:
 
     if i%100==0:
         positions = {name:tuple(node_map[name].getPosition()) for name in node_map.keys()}
@@ -56,51 +60,71 @@ while robot.step(TIME_STEP) != -1:
         # the distance to each target. Assigns the robot closest to the target to go to target. 
         # every 100 timesteps, give 4 new targets (we assume that the robot is able to finish it's task in 100 timesteps)
         
-        for k in range(8):
+        for k in range(4):
             task=random_task()
             task_name = f"task_{task_counter}"
             tasks[task_name] = task
             # now create a cone for this task
             create_cone(*task,f'task_{task_counter}') # name it the same as the task. 
             task_counter += 1
-        print("tasks assigned: ", tasks)
+        print("tasks generated: ", tasks)
             
-         
-    if tasks: # while tasks is not empty, then create a mapping and do them.   
-        #  (✿◕‿◕✿)
-        task_robot_mapping ={}
+# allocation of tasks: allocate only if the robot is idle and there are tasks left to assign         
+    idle_robots=[name for name,state in robot_states.items() if state=='IDLE']
+    print("CURRENTLY IDLE: ", idle_robots)
+    current_positions={name: tuple(node_map[name].getPosition()) for name in idle_robots}
         
-        available_robots = def_names.copy()
-        
-        for task_name,task_pos in tasks.items():
-            shortest=math.inf
-            closest=None
-            for name in available_robots:
-                # where is {name} ?
-                pos = positions[name]
-                r_task = tasks[task_name] # get the task
-                # for a task we only want to store the robot closest to the task 
-                distance = calc_distance(pos,r_task)
-                if distance<shortest and name in available_robots:
-                    shortest = distance
-                    closest=name
-            # if we found the closest for this task.
-            if closest:
-                task_robot_mapping[task_name] = closest
-                available_robots.remove(closest) 
-                 
-        print("TODO: ", task_robot_mapping) # this is the allocation. 
-        
-        for task_name,assignee in task_robot_mapping.items():
-            new_pos = tasks[task_name] # assign it the position of the task. 
-            translation_fields[assignee].setSFVec3f(list(new_pos)) # teleport!! ( ͡° ͜ʖ ͡°)
-            print(f"{task_name} completed by {assignee}")
-            # remove cone associated with the task name.
-            def_name = f"CONE_{task_name}"
-            cone_node = robot.getFromDef(def_name)
-            cone_node.remove()
-            # remove task from queue
+    for task_name,task_pos in list(tasks.items()):
+        if not idle_robots:
+            break
+        shortest=math.inf
+        closest=None
+        for name in idle_robots:
+            # where is {name} ?
+            pos = current_positions[name]
+            r_task = tasks[task_name] # get the task
+            # for a task we only want to store the robot closest to the task 
+            distance = calc_distance(pos,r_task)
+            if distance<shortest :
+                shortest = distance
+                closest=name
+        # if we found the closest for this task.
+        if closest:
+            robot_states[closest] = task_name # the robot is marked busy
+            robot_tasks[closest] = task_pos # the robot's current task is stored. 
+            idle_robots.remove(closest)
             del tasks[task_name]
-            print(f"Remaining Tasks {tasks}")
+             
+    
+    # now for execution: 
+    for robot in def_names:
+        # move only if marked as busy 
+        if robot_states[robot]!='IDLE':
+            # the coordinates it is supposed to go to: 
+            target_position = robot_tasks[robot]   
+            current_position = node_map[robot].getPosition()
+            task_name = robot_states[robot]
+            distance_to_target = calc_distance(current_position, target_position)
+            if distance_to_target<THRESHOLD:
+                translation_fields[robot].setSFVec3f(list(target_position))
+                def_name = f"CONE_{task_name}"
+                cone_node = supervisor.getFromDef(def_name)
+                if cone_node:
+                    cone_node.remove()
+                robot_states[robot] = 'IDLE'
+                del robot_tasks[robot]
+            delta_x = target_position[0]-current_position[0]
+            delta_y = target_position[1]-current_position[1]
+            v_x = (delta_x/distance_to_target)*SPEED
+            v_y = (delta_y/distance_to_target)*SPEED
+            new_x = current_position[0]+v_x
+            new_y = current_position[1]+v_y
+            translation_fields[robot].setSFVec3f([new_x, new_y, current_position[2]])
+            
+            
+            
+                        
+            
+
 
     i += 1
