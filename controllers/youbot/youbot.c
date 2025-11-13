@@ -22,6 +22,8 @@
 
 #include <webots/keyboard.h>
 #include <webots/robot.h>
+#include <webots/camera.h>
+#include <webots/lidar.h>
 
 #include <arm.h>
 #include <base.h>
@@ -102,6 +104,13 @@ static void display_helper_message() {
 
 int main(int argc, char **argv) {
   wb_robot_init();
+  
+  WbDeviceTag cam = wb_robot_get_device("camera");
+  wb_camera_enable(cam, TIME_STEP);
+
+  WbDeviceTag lidar = wb_robot_get_device("lidar");
+  wb_lidar_enable(lidar, TIME_STEP);
+  wb_lidar_enable_point_cloud(lidar);
 
   base_init();
   arm_init();
@@ -117,8 +126,22 @@ int main(int argc, char **argv) {
   wb_keyboard_enable(TIME_STEP);
 
   while (true) {
-    step();
+    step();  // advances simulation by TIME_STEP
 
+    // --- Get camera frame ---
+    const unsigned char *image = wb_camera_get_image(cam);
+    (void)image; // avoid unused variable warning
+
+    // --- Get lidar readings ---
+    const float *lidar_values = wb_lidar_get_range_image(lidar);
+    int num_points = wb_lidar_get_number_of_points(lidar);
+    if (lidar_values) {
+      // Example: print distance of the center beam
+      float center_distance = lidar_values[num_points / 2];
+      printf("Center LIDAR distance: %.2f m\n", center_distance);
+    }
+
+    // --- Keyboard control ---
     int c = wb_keyboard_get_key();
     if ((c >= 0) && c != pc) {
       switch (c) {
@@ -184,6 +207,7 @@ int main(int argc, char **argv) {
     }
     pc = c;
   }
+
 
   wb_robot_cleanup();
 

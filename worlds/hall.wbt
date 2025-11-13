@@ -90,8 +90,8 @@ WorldInfo {
   ]
 }
 DEF VIEWPOINT Viewpoint {
-  orientation 0.19164996383925656 0.30721420386093523 -0.9321425450576233 1.1864089281314691
-  position -3.533982446082728 12.298148675012682 5.346320345577173
+  orientation -0.13757893537740895 -0.8309875870719693 0.5390098947818351 5.677735834567336
+  position -0.7310610714827838 3.236226641997628 0.586168529342549
   ambientOcclusionRadius 1
 }
 TexturedBackground {
@@ -1363,7 +1363,7 @@ DEF EXERCISES_BOARD Robot {
                 ]
                 endPoint Bolt {
                   translation 0 -0.1 0
-                  rotation 0 0 1 1.5707953071795862
+                  rotation 0 0 0.9999999999999999 1.5707953071795862
                   appearance RustyMetal {
                     rustLevel 2
                   }
@@ -1400,7 +1400,7 @@ DEF EXERCISES_BOARD Robot {
                 ]
                 endPoint CapScrew {
                   translation 0 -0.12 0
-                  rotation 0 0 1 1.5707953071795862
+                  rotation 0 0 0.9999999999999999 1.5707953071795862
                   appearance RustyMetal {
                   }
                 }
@@ -2826,7 +2826,8 @@ DEF DOUBLE_DOOR Solid {
         dampingConstant 10
       }
       endPoint Solid {
-        translation -0.001 0.88 0
+        translation -0.0010000000000000009 0.88 0
+        rotation 0 0 -1 0
         children [
           DEF BOX Pose {
             translation -0.175 -0.43 1
@@ -3730,6 +3731,7 @@ DEF DOUBLE_DOOR Solid {
       }
       endPoint Solid {
         translation -0.0010000000000000009 0.88 0
+        rotation 0 0 -1 0
         children [
           DEF BOX Pose {
             translation -0.175 -0.43 1
@@ -5093,4 +5095,128 @@ OfficeChair {
 }
 Youbot {
   translation 0 2.97 0.12
+  bodySlot [
+    Solid {
+      translation -0.134499 -0.119257 0.06
+      rotation 0 0 1 1.8326
+      children [
+        Shape {
+          appearance PBRAppearance {
+            roughness 0.2
+          }
+          geometry Box {
+            size 0.01 0.23 0.03
+          }
+        }
+      ]
+      name "RightSideGuard"
+      boundingObject Box {
+        size 0.01 0.23 0.03
+      }
+      physics Physics {
+      }
+    }
+    Solid {
+      translation -0.138105 0.118435 0.06
+      rotation 0 0 1 -1.8325953071795862
+      children [
+        Shape {
+          appearance PBRAppearance {
+            roughness 0.2
+          }
+          geometry Box {
+            size 0.01 0.23 0.03
+          }
+        }
+      ]
+      name "LeftSideGuard"
+      boundingObject Box {
+        size 0.01 0.23 0.03
+      }
+      physics Physics {
+      }
+    }
+    Solid {
+      translation -0.03 0 0.06
+      children [
+        Shape {
+          appearance PBRAppearance {
+            roughness 0.2
+          }
+          geometry Box {
+            size 0.01 0.19 0.03
+          }
+        }
+      ]
+      name "FrontGuard"
+      boundingObject Box {
+        size 0.01 0.19 0.03
+      }
+      physics Physics {
+      }
+    }
+    Solid {
+      translation -0.25 0 0.06
+      children [
+        Shape {
+          appearance PBRAppearance {
+            roughness 0.2
+          }
+          geometry Box {
+            size 0.01 0.3 0.03
+          }
+        }
+      ]
+      name "BackGuard"
+      boundingObject Box {
+        size 0.01 0.3 0.03
+      }
+      physics Physics {
+      }
+    }
+    Solid {
+      translation 0.24 -0.1 6.74634e-14
+      rotation 0 1 0 1.5708
+      children [
+        Camera {
+          translation -1.01962e-08 0 0.02
+          rotation 0 1 0 -1.5707953071795862
+        }
+        Shape {
+          appearance Appearance {
+            texture ImageTexture {
+              url [
+                "https://www.shutterstock.com/image-photo/professional-optical-lens-modern-dslr-600nw-2439065523.jpg"
+              ]
+            }
+          }
+          geometry Cylinder {
+            height 0.05
+            radius 0.02
+          }
+        }
+      ]
+      name "CameraSolid"
+    }
+    Solid {
+      translation 0.26 0 0.0199974
+      rotation 0 1 0 -3.1415853071795863
+      children [
+        Lidar {
+          translation -0.02 0 -0.02
+          rotation 0 1 0 3.14159
+        }
+        Shape {
+          appearance PBRAppearance {
+            baseColor 0 0 0
+          }
+          geometry Cylinder {
+            height 0.05
+            radius 0.02
+          }
+        }
+      ]
+      name "LidarSolid"
+    }
+  ]
 }
