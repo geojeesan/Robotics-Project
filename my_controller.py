@@ -24,8 +24,8 @@ def create_cone(x,y,z,name=""):
     children_field.importMFNodeFromString(-1, cone_vrml)
     
 def random_task():
-    x = 5*random.random()
-    y = 5*random.random()
+    x = 10*random.random()
+    y = 10*random.random()
     z = 0.09
     return (x,y,z)
     
@@ -35,8 +35,10 @@ def calc_distance(robot_pos,target_pos): # expecting a 3-tuple
     x_t,y_t,z_t = target_pos
     
     return math.sqrt((x_r-x_t)**2+(y_r-y_t)**2+(z_r-z_t)**2)
-
-
+    
+def build_occupancy_grid():
+    pass
+    
 
 supervisor = Supervisor()  
 root_node = supervisor.getRoot()
