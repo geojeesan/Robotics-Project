@@ -68,6 +68,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/lights/protos/DoubleFluorescentLamp.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/chairs/protos/WoodenChair.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/chairs/protos/OfficeChair.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/kuka/youbot/protos/KukaBox.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/drinks/protos/WaterBottle.proto"
 
 WorldInfo {
   info [
@@ -88,8 +90,8 @@ WorldInfo {
   ]
 }
 DEF VIEWPOINT Viewpoint {
-  orientation 0.22892375141539348 0.19133360053831094 -0.9544555355504778 1.794869403405675
-  position 0.013543021429423277 8.120394673668846 2.7784201189527225
+  orientation 0.0944065277144866 0.09735960739581641 -0.990761583012092 1.5492781475201856
+  position -0.09682647694067975 9.5163180244512 0.9383030953925575
   ambientOcclusionRadius 1
 }
 TexturedBackground {
@@ -589,13 +591,9 @@ DEF PLATFORM Pose {
           boundingObject USE SHAPE
         }
         Door {
-          hidden translation_4 0.0010977591737587056 -2.773515017706618e-05 -6.661338147750939e-16
-          hidden rotation_4 0 0 1 0.00018620303099629369
-          hidden position_5_0 0.020001824999077877
-          hidden rotation_6 -0.9999999999999999 0 0 1.8247687238266663e-06
           translation 1.47 -0.81 0
           size 0.2 1.1 2
-          position 0.00018620303103185473
+          position -1.7780125764635477e-07
           jointAtLeft FALSE
           selfClosing TRUE
           doorAppearance MattePaint {
@@ -1027,12 +1025,6 @@ DEF PLATFORM Pose {
       ]
     }
     Cabinet {
-      hidden position_6_0 1.9205735298329734e-05
-      hidden translation_7 -3.821941324132652e-06 -3.67018915259365e-11 0
-      hidden rotation_7 0 0 1 1.9205741269326123e-05
-      hidden position_10_0 -1.6327764640240852e-05
-      hidden translation_11 -2.761841388774027e-06 2.2547130829053685e-11 0
-      hidden rotation_11 0 0 -1 1.6327756565391043e-05
       translation -1.6 -6.22 2.5
       layout [
         "RightSidedDoor (1, 1, 1, 5, 1.5)"
@@ -1046,12 +1038,6 @@ DEF PLATFORM Pose {
       }
     }
     Cabinet {
-      hidden position_6_0 1.9205735298334546e-05
-      hidden translation_7 -3.8219413241336095e-06 -3.67018915259365e-11 0
-      hidden rotation_7 0 0 0.9999999999999999 1.9205741269326123e-05
-      hidden position_10_0 -1.632776464025466e-05
-      hidden translation_11 -2.761841388776363e-06 2.2547130829053685e-11 0
-      hidden rotation_11 0 0 -1 1.6327756565391043e-05
       translation -1.6 -5.41 2.5
       name "cabinet(1)"
       layout [
@@ -1088,8 +1074,8 @@ DEF PLATFORM Pose {
       size 0.4 0.4 0.4
     }
     CardboardBox {
-      translation -1.3233213026351658 -4.754279256765135 3.791573145579796
-      rotation -6.822053872492367e-05 -0.0010602780920892713 0.9999994355780035 3.1415324534808864
+      translation -1.3231003830260595 -4.75429659287332 3.791567047003673
+      rotation -7.90787774903641e-05 -0.0010670108877093164 0.9999994276169925 3.141534710939564
       name "cardboard box(4)"
       size 0.4 0.4 0.4
       mass 2
@@ -1101,14 +1087,14 @@ DEF PLATFORM Pose {
       size 0.4 0.4 0.4
     }
     CardboardBox {
-      translation -1.2840583559494818 -4.657749526904813 2.79489060034502
-      rotation 0.0009232411640188297 -0.0005467798137708275 0.9999994243286285 1.5707038800788633
+      translation -1.2838162118266165 -4.657753140281335 2.7948866375698658
+      rotation 0.0009191924192389958 -0.0005640343263465662 0.9999994184751183 1.5707061099420736
       name "cardboard box(2)"
       mass 10
     }
     CardboardBox {
-      translation -1.282613408955509 -4.704711736670216 3.3424671720983534
-      rotation 0.9999999972855522 -2.8455294270464022e-05 6.796463792468897e-05 -3.1394804098571707
+      translation -1.2823828591054256 -4.704722844928535 3.342462619306359
+      rotation 0.9999999965234941 -2.732656225313471e-05 7.877988781495638e-05 -3.139466997615127
       name "cardboard box(3)"
       size 0.5 0.5 0.5
       mass 4
@@ -1143,12 +1129,6 @@ TrafficCone {
   translation -3.04111 -4.77977 0
 }
 Cabinet {
-  hidden position_6_0 2.4003187634246025e-05
-  hidden translation_7 -5.97079292344534e-06 -7.165945614673319e-11 0
-  hidden rotation_7 0 0 0.9999999999999999 2.4003194521992478e-05
-  hidden position_10_0 -2.7361772844039248e-05
-  hidden translation_11 -7.75911473328026e-06 1.0615164303118263e-10 0
-  hidden rotation_11 0 0 -1 2.7361778199871907e-05
   translation -2.70511 11.1138 0
   rotation 0 0 -1 1.5708
   name "cabinet(2)"
@@ -1339,7 +1319,7 @@ DEF EXERCISES_BOARD Robot {
             children [
               HingeJoint {
                 jointParameters HingeJointParameters {
-                  position 8.740601024671647e-09
+                  position 1.1653172209235346e-08
                   axis 0 -1 0
                   anchor 0 -0.09 0
                   dampingConstant 0.005
@@ -1352,7 +1332,7 @@ DEF EXERCISES_BOARD Robot {
                 ]
                 endPoint EyeScrew {
                   translation 0 -0.09 0
-                  rotation 0.5773502675074912 0.5773502675075057 0.5773502725538803 2.094399994953611
+                  rotation 0.577350266946965 0.5773502669469844 0.5773502736749279 2.094399993272037
                 }
               }
             ]
@@ -1374,7 +1354,7 @@ DEF EXERCISES_BOARD Robot {
             children [
               HingeJoint {
                 jointParameters HingeJointParameters {
-                  position 2.786413707157483e-07
+                  position 3.714911474719094e-07
                   axis 0 -1 0
                   dampingConstant 0.005
                   staticFriction 0.005
@@ -1385,8 +1365,8 @@ DEF EXERCISES_BOARD Robot {
                   }
                 ]
                 endPoint Bolt {
-                  translation 0 -0.10000000000000034 0
-                  rotation -1.3932068535787238e-07 -1.393208274114488e-07 0.9999999999999805 1.570795307179606
+                  translation 0 -0.10000000000000106 0
+                  rotation -1.8574557373595115e-07 -1.857457631250787e-07 0.9999999999999654 1.570795307179621
                   appearance RustyMetal {
                     rustLevel 2
                   }
@@ -1412,7 +1392,7 @@ DEF EXERCISES_BOARD Robot {
             children [
               HingeJoint {
                 jointParameters HingeJointParameters {
-                  position -3.834376101888844e-07
+                  position -5.112079278890166e-07
                   axis 0 -1 0
                   dampingConstant 0.005
                   staticFriction 0.005
@@ -1423,8 +1403,8 @@ DEF EXERCISES_BOARD Robot {
                   }
                 ]
                 endPoint CapScrew {
-                  translation 0 -0.11999999999999952 0
-                  rotation 1.9171880509443793e-07 1.917190005739661e-07 0.9999999999999631 1.570795307179623
+                  translation 0 -0.11999999999999944 0
+                  rotation 2.556039639444976e-07 2.55604224562345e-07 0.9999999999999346 1.5707953071796514
                   appearance RustyMetal {
                   }
                 }
@@ -1554,39 +1534,18 @@ DEF EXERCISES_BOARD Robot {
       controller "screw_controller"
     }
     SmallValve {
-      hidden position_0_0 -15.705999917850297
-      hidden translation_1 0.005999999999999997 8.379269619369835e-10 -0.02039999999999996
-      hidden rotation_1 1 0 0 3.141629482150179
       translation 0.61489 10.9538 2.27
       rotation 0 0 1 -1.5707953071795862
     }
     LeverValve {
-      hidden position_0_0 -1.7614672974945597e-06
-      hidden translation_1 0 3.522934594987303e-08 -3.099950851570554e-14
-      hidden rotation_1 -1 0 0 1.7613651580557445e-06
       translation -0.29511 10.9638 1.87
       rotation 0.5773502691896258 -0.5773502691896258 0.5773502691896258 -2.094395307179586
     }
     LargeValve {
-      hidden position_0_0 -15.707963208097697
-      hidden translation_1 5.551115123125783e-17 -5.68121883759431e-10 -1.734723475976807e-17
-      hidden rotation_1 1 0 0 2.9802322387695313e-08
       translation -0.28 10.6038 1.2499999999999045
       rotation 0 0 1 -1.5707953071795862
     }
     Cabinet {
-      hidden position_6_0 3.216006247183297e-05
-      hidden translation_7 -1.0719752821575884e-05 -1.7237372640366289e-10 0
-      hidden rotation_7 0 0 1 3.216006155013336e-05
-      hidden position_10_0 -3.2160062470375935e-05
-      hidden translation_11 -1.071975282109021e-05 1.7237372640366289e-10 0
-      hidden rotation_11 0 0 -1 3.216006155013336e-05
-      hidden position_14_0 3.2160062471832886e-05
-      hidden translation_15 -1.0719752821575857e-05 -1.7237372640366289e-10 0
-      hidden rotation_15 0 0 1 3.216006155013336e-05
-      hidden position_18_0 -3.216006247037752e-05
-      hidden translation_19 -1.071975282109074e-05 1.7237372640366289e-10 0
-      hidden rotation_19 0 0 -1 3.216006155013336e-05
       translation -0.25511 11.1138 0
       rotation 0 0 -1 1.5708
       name "cabinet(10)"
@@ -1641,7 +1600,7 @@ DEF EXERCISES_BOARD Robot {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 0.0013929331095496877
+        position 0.0005222498528087982
         axis -1 0 0
         anchor -0.125114 10.95 2.473
         maxStop 2
@@ -1649,8 +1608,8 @@ DEF EXERCISES_BOARD Robot {
         dampingConstant 1
       }
       endPoint Solid {
-        translation -0.12511 10.949962551079398 2.441000551605093
-        rotation -1 0 0 0.001392933109559562
+        translation -0.12511 10.949990412474015 2.4410005311281684
+        rotation -1 0 0 0.000522249853133253
         children [
           DEF SHAPE Shape {
             appearance PBRAppearance {
@@ -1940,23 +1899,23 @@ DEF EXERCISES_BOARD Robot {
         }
         Slot {
           endPoint DoorLever {
-            translation -0.06000000000000005 0 0.14995146830824346
-            rotation 5.746973072299038e-07 5.746953721728283e-07 0.9999999999996696 1.5707929597003303
+            translation -0.06000000000000005 0 0.14993529641741743
+            rotation 7.661998513175773e-07 7.661972714543574e-07 0.9999999999994129 1.570792959700587
             canTurn TRUE
           }
         }
         Slot {
           endPoint DoorLever {
-            translation -0.06000000000000005 0 0.04995146830824415
-            rotation 5.746973072299045e-07 5.746953721728277e-07 0.9999999999996696 1.5707929597003303
+            translation -0.06000000000000005 0 0.04993529641741834
+            rotation 7.661998511955819e-07 7.661972713323608e-07 0.9999999999994129 1.570792959700587
             name "door lever(1)"
             canTurn TRUE
           }
         }
         Slot {
           endPoint DoorLever {
-            translation -0.06000000000000005 0 -0.05604853169175594
-            rotation 5.746973072299045e-07 5.746953721728277e-07 0.9999999999996696 1.5707929597003303
+            translation -0.06000000000000005 0 -0.056064703582581754
+            rotation 7.661998511955819e-07 7.661972713323608e-07 0.9999999999994129 1.570792959700587
             name "door lever(2)"
             canTurn TRUE
           }
@@ -1968,34 +1927,22 @@ DEF EXERCISES_BOARD Robot {
   name "solid"
 }
 PaintBucket {
-  hidden position_0_0 -2.000001858888309
-  hidden rotation_1 0 -1 0 2.000001858888309
-  hidden position_1_0 -1.3423072807517895e-05
-  hidden rotation_2 0 -0.9999999999999999 0 1.3423059962478855e-05
-  translation 0.6287126779849539 10.814001754458472 0.028417693044767822
-  rotation 0.11096029898470876 -0.9938248372327465 7.034577906784785e-05 0.006798378596901365
+  translation 0.6287126540117307 10.814001784776798 0.028418794470466954
+  rotation 0.11397146643811099 -0.9934840216297683 6.003572626578227e-05 0.006785575004619783
 }
 PaintBucket {
-  hidden position_0_0 -2.0000018588883037
-  hidden rotation_1 0 -1 0 2.0000018588883037
-  hidden position_1_0 -1.3423069212591027e-05
-  hidden rotation_2 0 -1 0 1.3423059962478855e-05
-  translation 0.3687102276867245 10.873992253805795 0.028417693054177455
-  rotation -0.0024675158422783313 -0.008532573689586726 -0.9999605524978473 0.7854256169188203
+  translation 0.3687102321836176 10.87399229220814 0.02841879448709629
+  rotation -0.0024370364551505527 -0.008523932731505344 -0.9999607009398443 0.7854255828447376
   name "paint bucket(1)"
 }
 PaintBucket {
-  hidden position_0_0 -2.000001858888305
-  hidden rotation_1 0 -1 0 2.000001858888305
-  hidden position_1_0 -1.34230685666059e-05
-  hidden rotation_2 0 -1 0 1.3423059962478855e-05
-  translation -0.9213059030925889 10.874007746194152 0.02841769305414457
-  rotation 0.003534421033623922 -0.001022111294414196 0.9999932315553235 2.356199726799815
+  translation -0.9213059075894467 10.87400770779185 0.028418794487040676
+  rotation 0.00353084163110147 -0.001009485909212858 0.9999932570250537 2.3561996378951258
   name "paint bucket(2)"
 }
 DEF ELECTRIC_PLUG Solid {
-  translation -0.04003500358899881 10.874957269455948 0.045015693996276224
-  rotation 0.9994296105242353 -0.023905068388490897 -0.0238537483997208 1.423709323796424
+  translation -0.040035003571833795 10.874957269464534 0.04501569397374486
+  rotation 0.9994296105260623 -0.023905067743548974 -0.023853748969492033 1.423709323201641
   children [
     ElectricalPlug {
       rotation 0 0 1 6.283185307179586
@@ -2025,28 +1972,28 @@ DEF ELECTRIC_PLUG Solid {
   }
 }
 ElectricalPlug {
-  translation 0.49288971557736977 10.708924470367805 0.7279612362787656
-  rotation -0.6486919693523535 0.49573576950888354 -0.5774467730684795 1.8544111127614205
+  translation 0.4928897138681121 10.708924469777381 0.7279612361949268
+  rotation -0.6486919462832192 0.4957357560234604 -0.5774468105610567 1.8544110445334552
   name "electrical plug(1)"
 }
 EyeScrew {
-  translation 0.6131438508553044 10.742121859554244 0.7599903020146375
-  rotation -0.24967237062565148 0.9351391523334195 0.25135328348621416 1.6382592909184115
+  translation 0.6131460993751611 10.742120378822047 0.7599904318204639
+  rotation -0.24964881579064951 0.935141303083844 0.25136867752561515 1.6382939578098388
 }
 CapScrew {
-  translation 0.7236175010147172 10.758987659111547 0.719881658201564
-  rotation -0.037711212368356714 0.016538008185429297 0.9991518196685465 2.6315110652997387
+  translation 0.7236175281413949 10.758987706927257 0.7198816560446232
+  rotation -0.037710476635026254 0.0165407597147656 0.9991518018899919 2.631511297091227
 }
 Washer {
-  translation 0.8131000320796558 10.74220014112026 0.7109322498770128
-  rotation -7.514033143014799e-05 -0.9999999943545095 7.513262864849571e-05 1.5707611485263127
+  translation 0.8131000320796558 10.74220014112026 0.7109322498769994
+  rotation -7.514033141627695e-05 -0.9999999943545095 7.513262863461009e-05 1.5707611485265318
   appearance MetalPipePaint {
   }
   innerRadius 0.014
 }
 Solid {
-  translation -1.0051099681398543 10.783906124398241 1.8752392643647162
-  rotation -0.9999999994084926 2.1777566689586968e-05 -2.662240392248288e-05 0.0244441643211763
+  translation -1.0051099681399414 10.78390870829939 1.8752388047199609
+  rotation -0.9999999994413111 2.1258850907675435e-05 -2.5796108587300164e-05 0.0250230528683817
   children [
     DEF SHAPE Shape {
       appearance PBRAppearance {
@@ -2068,12 +2015,6 @@ Solid {
   }
 }
 Cabinet {
-  hidden position_6_0 1.920573529834142e-05
-  hidden translation_7 -3.821941324134977e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 1 1.9205741269326123e-05
-  hidden position_10_0 -1.63277646396159e-05
-  hidden translation_11 -2.761841388668317e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation -3.0077 -11.1117 0
   rotation 0 0 -1 -1.5707953071795862
   name "cabinet(9)"
@@ -2089,12 +2030,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.9205735298344642e-05
-  hidden translation_7 -3.821941324135619e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 0.9999999999999999 1.9205741269326123e-05
-  hidden position_10_0 -1.6327764639615993e-05
-  hidden translation_11 -2.7618413886683316e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation -2.18771 -11.1117487 0
   rotation 0 0 -1 -1.5707953071795862
   name "cabinet(3)"
@@ -2110,12 +2045,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.920573529832354e-05
-  hidden translation_7 -3.82194132413142e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 1 1.9205741269326123e-05
-  hidden position_10_0 -1.6327764640213144e-05
-  hidden translation_11 -2.76184138876934e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation 6.468667801240305 4.3470132184 0
   rotation 0 0 1 3.14159
   name "cabinet(5)"
@@ -2131,12 +2060,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.9205735298336185e-05
-  hidden translation_7 -3.8219413241339356e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 0.9999999999999999 1.9205741269326123e-05
-  hidden position_10_0 -1.6327764640241317e-05
-  hidden translation_11 -2.7618413887741057e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation 5.86766 6.24849 0
   rotation 0 0 1 -1.5707953071795862
   name "cabinet(13)"
@@ -2152,12 +2075,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.9205735298332977e-05
-  hidden translation_7 -3.821941324133298e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 1 1.9205741269326123e-05
-  hidden position_10_0 -1.6327764640241096e-05
-  hidden translation_11 -2.7618413887740684e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation 5.86766 6.24849 1.5
   rotation 0 0 1 -1.5707953071795862
   name "cabinet(16)"
@@ -2173,12 +2090,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.9205735298315328e-05
-  hidden translation_7 -3.821941324129785e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 1 1.9205741269326123e-05
-  hidden position_10_0 -1.632776464024137e-05
-  hidden translation_11 -2.7618413887741146e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation 5.06766 6.24849 0
   rotation 0 0 1 -1.5707953071795862
   name "cabinet(14)"
@@ -2194,12 +2105,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.9205735298345252e-05
-  hidden translation_7 -3.821941324135741e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 1 1.9205741269326123e-05
-  hidden position_10_0 -1.632776464024114e-05
-  hidden translation_11 -2.7618413887740756e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation 5.06766 6.24849 1.5
   rotation 0 0 -1 1.5708
   name "cabinet(15)"
@@ -2215,12 +2120,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.9205735298342806e-05
-  hidden translation_7 -3.821941324135254e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 1 1.9205741269326123e-05
-  hidden position_10_0 -1.6327764640254388e-05
-  hidden translation_11 -2.7618413887763165e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation 6.4666 3.433726 0
   rotation 0 0 1 3.14159
   name "cabinet(8)"
@@ -2236,12 +2135,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.920573529834444e-05
-  hidden translation_7 -3.821941324135579e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 1 1.9205741269326123e-05
-  hidden position_10_0 -1.6327764640254408e-05
-  hidden translation_11 -2.7618413887763203e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -0.9999999999999999 1.6327756565391043e-05
   translation 6.48031 2.55073 0
   rotation 0 0 1 3.14159
   name "cabinet(7)"
@@ -2257,12 +2150,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.9205735298351124e-05
-  hidden translation_7 -3.821941324136909e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 0.9999999999999999 1.9205741269326123e-05
-  hidden position_10_0 -1.6327764639657958e-05
-  hidden translation_11 -2.7618413886754306e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation 5.92043 0.04786 0
   rotation 0 0 1 1.5708
   name "cabinet(6)"
@@ -2278,12 +2165,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.9205735298346302e-05
-  hidden translation_7 -3.821941324135948e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 1 1.9205741269326123e-05
-  hidden position_10_0 -1.6327764639657772e-05
-  hidden translation_11 -2.761841388675399e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation 5.92043 0.04786 1.5
   rotation 0 0 1 1.5708
   name "cabinet(11)"
@@ -2299,12 +2180,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.9205735298343094e-05
-  hidden translation_7 -3.821941324135311e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 1 1.9205741269326123e-05
-  hidden position_10_0 -1.6327764639657836e-05
-  hidden translation_11 -2.7618413886754094e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation 5.12043 0.04786 0
   rotation 0 0 1 1.5708
   name "cabinet(10)"
@@ -2320,12 +2195,6 @@ Cabinet {
   }
 }
 Cabinet {
-  hidden position_6_0 1.920573529833668e-05
-  hidden translation_7 -3.821941324134035e-06 -3.67018915259365e-11 0
-  hidden rotation_7 0 0 1 1.9205741269326123e-05
-  hidden position_10_0 -1.6327764639657772e-05
-  hidden translation_11 -2.761841388675399e-06 2.2547130829053685e-11 0
-  hidden rotation_11 0 0 -1 1.6327756565391043e-05
   translation 5.12043 0.04786 1.5
   rotation 0 0 1 1.5708
   name "cabinet(12)"
@@ -2345,9 +2214,6 @@ DEF FIRST_AID_BOX Pose {
   rotation 0 0 1 3.141592644
   children [
     Cabinet {
-      hidden position_6_0 -1.4409463072488016e-05
-      hidden translation_7 -2.15061236349441e-06 1.5494827643180997e-11 0
-      hidden rotation_7 0 0 -1 1.4409476808263207e-05
       rotation 0 0 1 3.14159
       name "cabinet(4)"
       depth 0.2
@@ -2390,8 +2256,8 @@ DEF FIRST_AID_BOX Pose {
   ]
 }
 FireExtinguisher {
-  translation 3.3738000090950586 6.384509923866061 -0.004708799981060718
-  rotation 4.85135649579282e-05 0.003980006667387558 0.9999920785653063 -2.879795344684494
+  translation 3.37380000909505 6.384509923866128 -0.0047088000001795915
+  rotation 4.851390565990902e-05 0.003980030995753199 0.9999920784684615 -2.8797953447095597
 }
 DEF FIRE_EXTINGUISHER_PANEL Pose {
   translation 3.572 6.07451 1.98
@@ -2423,8 +2289,8 @@ OfficeTelephone {
   enablePhysics FALSE
 }
 FireExtinguisher {
-  translation -3.3605279890802398 -9.653742924106288 -0.004708799981060718
-  rotation 0.989780310500344 -0.1426006204258235 1.1313165890648998e-07 0.007892522148668996
+  translation -3.3605279890802495 -9.653742924106352 -0.004708800000179703
+  rotation 0.9897803089185097 -0.1426006314052179 1.131308663240493e-07 0.007892570394211831
   name "fire extinguisher(1)"
 }
 Table {
@@ -2471,8 +2337,8 @@ Table {
   }
 }
 OfficeTelephone {
-  translation 3.2299979003592396 -0.7059968542503254 0.7031580817369836
-  rotation -0.00029296846310593306 0.0004296381271862943 0.9999998647902705 3.141589350268807
+  translation 3.2299979003592254 -0.7059968542503201 0.703158081735875
+  rotation -0.00029296846522563704 0.0004296381279651462 0.9999998647902697 3.141589350268806
   name "telephone(2)"
 }
 Table {
@@ -2504,23 +2370,13 @@ Table {
   }
 }
 PlatformCart {
-  hidden position_0_0 -2.251671292625247e-06
-  hidden position2_0_0 0.0043750544014800425
-  hidden position_0_1 -2.3447557144690657e-06
-  hidden position2_0_1 0.004393258606161831
-  hidden position_0_2 0.004372742052823566
-  hidden position_0_3 0.004390943466833119
-  hidden rotation_2 0.9999952147601614 0.0021863863513550716 -0.0021886460429276313 1.570804790176888
-  hidden rotation_3 0.9999951748554808 0.002195441790577593 -0.002197794599295051 1.5708048303067266
-  hidden rotation_4 0.9999952198183353 0.002186356027979134 -0.0021863640589280023 1.5708047801930893
-  hidden rotation_5 0.9999951799409337 0.0021954566141872797 -0.002195464678564529 1.5708048200706826
-  translation 2.8871946535418602 4.170400256413131 -0.00540905294219024
-  rotation 0.00034688164806728094 -0.001339146615879957 0.999999043179274 3.1415891178356055
+  translation 2.8871945603846116 4.17040025620013 -0.00540905294714672
+  rotation 0.0003468843158366472 -0.0013392018632344233 0.9999990431043628 3.1415891176218484
   name "platform cart(1)"
 }
 WoodenBox {
-  translation 2.862536073888074 4.125642113289748 0.39413625213094783
-  rotation 0.9932401285386329 0.11607745108112988 -0.0002690930463707327 0.006070364524469745
+  translation 2.8625361910347475 4.125640268010028 0.39413623041381224
+  rotation 0.9932405834183649 0.11607358027819922 -0.0002596384928742364 0.00607061209199498
   name "wooden box(1)"
   mass 12
 }
@@ -2853,7 +2709,7 @@ DEF DOUBLE_DOOR Solid {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 0.0003870820766039225
+        position 0.0005160677228405408
         axis 0 0 1
         anchor -0.15 -0.875 0
         minStop -0.01
@@ -2861,8 +2717,8 @@ DEF DOUBLE_DOOR Solid {
         dampingConstant 10
       }
       endPoint Solid {
-        translation -0.0013387079710945327 5.760967623846813e-05 0
-        rotation 0 0 1 0.00038708207708860304
+        translation -0.0014515790787207605 7.67775697132489e-05 0
+        rotation 0 0 1 0.0005160677226609579
         children [
           DEF BOX Pose {
             translation -0.175 -0.43 1
@@ -2958,7 +2814,7 @@ DEF DOUBLE_DOOR Solid {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 0.000370552713662485
+        position 0.0004940303470751001
         axis 0 0 -1
         anchor -0.15 0.875 0
         minStop -0.01
@@ -2966,8 +2822,8 @@ DEF DOUBLE_DOOR Solid {
         dampingConstant 10
       }
       endPoint Solid {
-        translation -0.0009981574660177517 0.8799447873036546 0
-        rotation 0 0 -1 0.00037055271372050556
+        translation -0.0009975480312804375 0.8799263888711152 0
+        rotation 0 0 -1 0.0004940303470196448
         children [
           DEF BOX Pose {
             translation -0.175 -0.43 1
@@ -3168,15 +3024,11 @@ Wall {
   }
 }
 Door {
-  hidden translation_5 0.0009269303610220381 2.2926965509040276e-05 2.220446049250313e-16
-  hidden rotation_5 0 0 -1 0.00015383453061630872
-  hidden position_6_0 0.02000182499952728
-  hidden rotation_7 -1 0 0 1.8252553937176575e-06
   translation 3.575 7.218 0
   rotation 0 0 1 3.14159
   name "door(1)"
   size 0.2 1 3.652
-  position -0.00015383453118608136
+  position 1.468714304079688e-07
   jointAtLeft FALSE
   selfClosing TRUE
   doorAppearance GlossyPaint {
@@ -3245,12 +3097,10 @@ DEF WINDOW_DOOR_BLOCK Pose {
   rotation 0 0 1 3.141592644
   children [
     Door {
-      hidden translation_5 0.0012129898100206316 -6.675909679088043e-05 -1.9984014443252818e-15
-      hidden rotation_5 0 0 1 0.0004483680840369791
       rotation 0 0 1 3.14159
       name "door(4)"
       size 0.2 1 3
-      position 0.0004483680844813713
+      position 0.0005977755369679726
       jointAtLeft FALSE
       doorAppearance GlossyPaint {
         baseColor 0.58 0.52 0.47
@@ -3768,7 +3618,7 @@ DEF DOUBLE_DOOR Solid {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 0.0003870804317697237
+        position 0.0005160655299043667
         axis 0 0 1
         anchor -0.15 -0.875 0
         minStop -0.01
@@ -3776,8 +3626,8 @@ DEF DOUBLE_DOOR Solid {
         dampingConstant 10
       }
       endPoint Solid {
-        translation -0.0013387065317695679 5.7609431717509096e-05 0
-        rotation 0 0 1 0.0003870804318941548
+        translation -0.0014515771597332083 7.677724395627195e-05 0
+        rotation 0 0 1 0.0005160655300384137
         children [
           DEF BOX Pose {
             translation -0.175 -0.43 1
@@ -3873,7 +3723,7 @@ DEF DOUBLE_DOOR Solid {
     }
     HingeJoint {
       jointParameters HingeJointParameters {
-        position 0.0003705527136624845
+        position 0.0004940303470751006
         axis 0 0 -1
         anchor -0.15 0.875 0
         minStop -0.01
@@ -3881,8 +3731,8 @@ DEF DOUBLE_DOOR Solid {
         dampingConstant 10
       }
       endPoint Solid {
-        translation -0.0009981574660177517 0.8799447873036546 0
-        rotation 0 0 -1 0.00037055271372050556
+        translation -0.0009975480312804375 0.8799263888711152 0
+        rotation 0 0 -1 0.0004940303470196448
         children [
           DEF BOX Pose {
             translation -0.175 -0.43 1
@@ -4141,13 +3991,11 @@ DEF BLACK_TILES Pose {
   ]
 }
 Door {
-  hidden translation_5 0.0012129898100204095 -6.675909679110248e-05 -1.9984014443252818e-15
-  hidden rotation_5 0 0 1 0.0004483680840369791
   translation 2.4249 11.23 0
   rotation 0 0 1 1.5708
   name "door(2)"
   size 0.2 1 3.652
-  position 0.0004483680844813349
+  position 0.0005977755369679365
   jointAtLeft FALSE
   doorAppearance GlossyPaint {
     baseColor 0.58 0.52 0.47
@@ -5027,7 +4875,6 @@ Robot {
       }
     }
     EmergencyButton {
-      hidden position_0_0 9.106201013881686e-12
       translation 0 -0.004 0
       rotation 0 0 1 -1.5707953071795862
       includePositionSensor TRUE
@@ -5235,52 +5082,22 @@ WoodenChair {
   rotation 0 0 1 3.14159
 }
 OfficeChair {
-  hidden position_0_0 -0.00010183005443842319
-  hidden rotation_1 0 0 -1 0.00010183005251613445
-  translation 4.809189965543031 1.7770400362452992 -0.0014153365851352628
-  rotation 0.0007005682041110984 -0.0002962454634370529 0.9999997107213667 2.356200206554596
+  translation 4.809189965547959 1.7770400362502445 -0.0014153365606734969
+  rotation 0.0007005621257158332 -0.00029626018984263246 0.9999997107212621 2.3562002066222494
 }
 OfficeChair {
-  hidden position_0_0 -0.00010183005444019955
-  hidden rotation_1 0 0 -0.9999999999999999 0.00010183005251613445
-  translation 4.7289599513820795 2.978219988282408 -0.0014153365851352906
-  rotation 0.0007033930647935579 8.733803189189095e-05 0.9999997488051007 -2.8797953701882837
+  translation 4.7289599513802605 2.9782199882891494 -0.0014153365606735802
+  rotation 0.0007033950208569771 8.732331547402236e-05 0.9999997488050101 -2.8797953701207275
   name "office chair(1)"
 }
 OfficeChair {
-  hidden position_0_0 -0.00010183005444019955
-  hidden rotation_1 0 0 -0.9999999999999999 0.00010183005251613445
-  translation 4.370639952036724 4.1856000141608085 -0.0014153365851352906
-  rotation 0.0007020304849207414 -9.768635016952803e-05 0.9999997488052561 2.8798000670171815
+  translation 4.370639952038519 4.185600014167555 -0.0014153365606735246
+  rotation 0.0007020285655026389 -9.770107140717765e-05 0.9999997488051654 2.8798000670847848
   name "office chair(2)"
 }
 Solid {
-  translation 0.7 6.1325953072106145e-18 0.012480380000034635
-  rotation 0.6888563004944211 -2.1726821746221667e-16 0.7248979219649755 2.5529174513524126e-16
-  children [
-    Shape {
-      appearance Appearance {
-        material Material {
-          diffuseColor 1 0 0
-          shininess 0.8
-          specularColor 0.5 0.5 0.5
-        }
-      }
-      geometry Box {
-        size 0.025 0.025 0.025
-      }
-    }
-  ]
-  boundingObject Box {
-    size 0.025 0.025 0.025
-  }
-  physics Physics {
-    mass 0.05
-  }
-}
-Solid {
-  translation -0.8 2.394631498476424e-18 0.04992152000013788
-  rotation 1.144939908224279e-14 -0.8541409102754334 0.5200416381347306 1.2286227611387293e-16
+  translation -0.8 2.167974010269119e-18 0.049921520000000136
+  rotation -0.3722248815035068 0.18611244075175792 0.9092913707866824 7.048272534504148e-17
   children [
     Shape {
       appearance Appearance {
@@ -5303,8 +5120,8 @@ Solid {
   }
 }
 Robot {
-  translation -1.9678916140406413 3.9999194744417794 0.09887490986218786
-  rotation 0.13073655211494514 0.9914171362236726 -0.0001262661800772948 0.00525094964321163
+  translation -1.1369071143736122 3.998230440718266 0.09887557583891426
+  rotation -0.0017722369163712594 0.0031526783158090594 0.999993459876488 0.9139218643372922
   children [
     Camera {
       translation 0.25 0.05 0
@@ -5439,7 +5256,7 @@ Robot {
         }
         HingeJoint {
           jointParameters HingeJointParameters {
-            position 2.949000001823091
+            position -1.2107292945984227e-10
             axis 0 0 1
             anchor 0 0 0.077
           }
@@ -5457,7 +5274,6 @@ Robot {
           ]
           endPoint Solid {
             translation 0 0 0.077
-            rotation 0 0 0.9999999999999999 2.949000001823091
             children [
               Group {
                 children [
@@ -5523,7 +5339,7 @@ Robot {
               }
               HingeJoint {
                 jointParameters HingeJointParameters {
-                  position 0.9200054077892497
+                  position 1.5700026267549778
                   axis 0 -1 0
                   anchor 0.033 0 0.07
                 }
@@ -5541,7 +5357,7 @@ Robot {
                 ]
                 endPoint Solid {
                   translation 0.033 0 0.07
-                  rotation 0 -1 0 0.9200054077892499
+                  rotation 0 -1 0 1.5700026267549778
                   children [
                     Group {
                       children [
@@ -5594,7 +5410,7 @@ Robot {
                     }
                     HingeJoint {
                       jointParameters HingeJointParameters {
-                        position 0.4200021245212052
+                        position -2.6350014835907074
                         axis 0 -1 0
                         anchor 0 0 0.155
                       }
@@ -5612,7 +5428,7 @@ Robot {
                       ]
                       endPoint Solid {
                         translation 0 0 0.155
-                        rotation 0 -1 0 0.42000212452120544
+                        rotation 0 0.9999999999999999 0 2.6350014835907074
                         children [
                           Group {
                             children [
@@ -5692,7 +5508,7 @@ Robot {
                           }
                           HingeJoint {
                             jointParameters HingeJointParameters {
-                              position 1.7800000105595561
+                              position 1.7800004207813662
                               axis 0 -1 0
                               anchor 0 0 0.135
                             }
@@ -5710,7 +5526,7 @@ Robot {
                             ]
                             endPoint Solid {
                               translation 0 0 0.135
-                              rotation 0 -1 0 1.7800000105595561
+                              rotation 0 -1 0 1.7800004207813662
                               children [
                                 Group {
                                   children [
@@ -5763,7 +5579,7 @@ Robot {
                                 }
                                 HingeJoint {
                                   jointParameters HingeJointParameters {
-                                    position -7.407682418693983e-09
+                                    position 1.837184187533585e-07
                                     axis 0 0 1
                                     anchor 0 0 0.081
                                   }
@@ -5781,6 +5597,7 @@ Robot {
                                   ]
                                   endPoint Solid {
                                     translation 0 0 0.081
+                                    rotation 0 0 1 1.8371385344770487e-07
                                     children [
                                       Shape {
                                         appearance PBRAppearance {
@@ -5802,14 +5619,14 @@ Robot {
                                       }
                                       SliderJoint {
                                         jointParameters JointParameters {
-                                          position -9.486877383639445e-11
+                                          position 0.025008125680985035
                                           axis 0 1 0
                                         }
                                         device [
                                           LinearMotor {
                                             name "finger::left"
                                             minPosition -9.486877383639445e-11
-                                            maxPosition 0.025
+                                            maxPosition 0.025008125680985035
                                             maxForce 100
                                           }
                                           PositionSensor {
@@ -5817,7 +5634,7 @@ Robot {
                                           }
                                         ]
                                         endPoint Solid {
-                                          translation 0 -9.486877383639445e-11 0.09
+                                          translation 0 0.025008125680985035 0.09
                                           rotation 1 0 0 4.71239
                                           children [
                                             Shape {
@@ -5875,14 +5692,14 @@ Robot {
                                       }
                                       SliderJoint {
                                         jointParameters JointParameters {
-                                          position 9.486864379981849e-11
+                                          position 0.025008227611427868
                                           axis 0 -1 0
                                         }
                                         device [
                                           LinearMotor {
                                             name "finger::right"
                                             minPosition -9.486877383639445e-11
-                                            maxPosition 0.025
+                                            maxPosition 0.025008125680985035
                                             maxForce 100
                                           }
                                           PositionSensor {
@@ -5890,7 +5707,7 @@ Robot {
                                           }
                                         ]
                                         endPoint Solid {
-                                          translation 0 -9.486864379981849e-11 0.09
+                                          translation 0 -0.025008227611427868 0.09
                                           rotation 0 -0.7071067811865476 0.7071067811865476 3.14159
                                           children [
                                             Shape {
@@ -6068,7 +5885,7 @@ Robot {
     }
     DEF WHEEL1 HingeJoint {
       jointParameters HingeJointParameters {
-        position 0.6397850100480547
+        position 32.19613277921099
         axis 0 1 0
         anchor 0.228 -0.158 -0.055
       }
@@ -6083,7 +5900,7 @@ Robot {
       ]
       endPoint DEF WHEEL_SOLID Solid {
         translation 0.228 -0.158 -0.055
-        rotation 0 1 0 0.6397850100480544
+        rotation 0 -1 0 5.502979063866528
         children [
           Shape {
             appearance PBRAppearance {
@@ -6267,7 +6084,7 @@ Robot {
     }
     DEF WHEEL2 HingeJoint {
       jointParameters HingeJointParameters {
-        position 0.639785081493942
+        position -30.916464179875565
         axis 0 1 0
         anchor 0.228 0.158 -0.055
       }
@@ -6282,7 +6099,7 @@ Robot {
       ]
       endPoint DEF WHEEL_SOLID Solid {
         translation 0.228 0.158 -0.055
-        rotation 0 1 0 0.6397850814939423
+        rotation 0 -0.9999999999999999 0 5.783722951157219
         children [
           Shape {
             appearance PBRAppearance {
@@ -6466,7 +6283,7 @@ Robot {
     }
     DEF WHEEL3 HingeJoint {
       jointParameters HingeJointParameters {
-        position 0.6397900858791586
+        position 32.19617412504599
         axis 0 1 0
         anchor -0.228 -0.158 -0.055
       }
@@ -6481,7 +6298,7 @@ Robot {
       ]
       endPoint DEF WHEEL_SOLID Solid {
         translation -0.228 -0.158 -0.055
-        rotation 0 1 0 0.639790085879159
+        rotation 0 -0.9999999999999999 0 5.502937718031527
         children [
           Shape {
             appearance PBRAppearance {
@@ -6665,7 +6482,7 @@ Robot {
     }
     DEF WHEEL4 HingeJoint {
       jointParameters HingeJointParameters {
-        position 0.6397901867406464
+        position -30.916680007946255
         axis 0 1 0
         anchor -0.228 0.158 -0.055
       }
@@ -6680,7 +6497,7 @@ Robot {
       ]
       endPoint DEF WHEEL_SOLID Solid {
         translation -0.228 0.158 -0.055
-        rotation 0 1 0 0.6397901867406466
+        rotation 0 -1 0 5.783938779227908
         children [
           Shape {
             appearance PBRAppearance {
@@ -6975,31 +6792,8 @@ Robot {
   controller "youbot_controller_py"
 }
 Solid {
-  translation 1.2 0.5 0.05
-  children [
-    Shape {
-      appearance Appearance {
-        material Material {
-          diffuseColor 1 0 0
-          emissiveColor 0.8 0 0
-        }
-      }
-      geometry Box {
-        size 0.1 0.1 0.1
-      }
-    }
-  ]
-  name "red_trash_1"
-  boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
-    density -1
-    mass 0.1
-  }
-}
-Solid {
-  translation -0.8 1 0.06
+  translation -0.8 1 0.059941198181148216
+  rotation -0.7059952510588047 0.7059952510588127 -0.056048291363958294 4.193505165783538e-17
   children [
     Shape {
       appearance Appearance {
@@ -7023,31 +6817,8 @@ Solid {
   }
 }
 Solid {
-  translation 0.5 1.5 0.045
-  children [
-    Shape {
-      appearance Appearance {
-        material Material {
-          diffuseColor 1 0 0
-          emissiveColor 0.8 0 0
-        }
-      }
-      geometry Box {
-        size 0.09 0.09 0.09
-      }
-    }
-  ]
-  name "red_trash_3"
-  boundingObject Box {
-    size 0.09 0.09 0.09
-  }
-  physics Physics {
-    density -1
-    mass 0.12
-  }
-}
-Solid {
-  translation -1.2 0.8 0.055
+  translation -1.2 0.8 0.054949038436481946
+  rotation 0.829414456966841 -0.5529429713112274 -0.07953445198095875 4.9015381770921414e-17
   children [
     Shape {
       appearance Appearance {
@@ -7070,51 +6841,18 @@ Solid {
     mass 0.13
   }
 }
-Solid {
-  translation 0.5 3.8 0.5  # Place in front of the robot, Y is half the box height (0.05/2)
-  name "RedTrash_1"
-  children [
-    Shape {
-      appearance PBRAppearance {
-        baseColor 1 0 0 # Bright Red
-        metalness 0
-        roughness 0.5
-      }
-      geometry Box {
-        size 0.05 0.05 0.05 # 5cm cube
-      }
-    }
-  ]
-  boundingObject Shape {
-    geometry Box {
-      size 0.05 0.05 0.05
-    }
-  }
-  physics Physics {
-    mass 0.05 # Small mass (50g)
-  }
+KukaBox {
+  translation 0 5.01 0
 }
-Solid {
-  translation 1.5 1.2 0.04
-  children [
-    Shape {
-      appearance Appearance {
-        material Material {
-          diffuseColor 1 0 0
-          emissiveColor 0.8 0 0
-        }
-      }
-      geometry Box {
-        size 0.08 0.08 0.08
-      }
-    }
-  ]
-  name "red_trash_6"
-  boundingObject Box {
-    size 0.08 0.08 0.08
-  }
-  physics Physics {
-    density -1
-    mass 0.08
-  }
+WaterBottle {
+  translation 0 5.03 0
+}
+WaterBottle {
+  translation 0 1.73 0
+}
+WaterBottle {
+  translation 0 7.73 0
+}
+WaterBottle {
+  translation 0 9.73 0
 }
