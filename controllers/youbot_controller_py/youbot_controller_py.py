@@ -1,318 +1,292 @@
-from controller import Robot, Keyboard, Motor, Camera, Lidar, GPS, Display
-import math
-import sys
+from controller import Robot, Keyboard
+import cv2
 import numpy as np
+import math
 
-# Constants
-TIME_STEP = 32
-BASE_SPEED = 4.0
-MAX_SPEED = 0.3
-SPEED_INCREMENT = 0.05
-WHEEL_RADIUS = 0.05
-LX = 0.228
-LY = 0.158
+# Library Imports
+from youbot_library import YoubotBase, YoubotArm, YoubotGripper, ParticleFilter, ParticleVisualizer
 
-# GPS Config
-GPS_NOISE_STD = 0.5 
+# YOLO imports
+from ultralytics import YOLO
+import torch
+try:
+    from ultralytics.nn.tasks import DetectionModel
+    from torch.nn.modules.container import Sequential
+    from torch.nn import Module
+    torch.serialization.add_safe_globals([DetectionModel, Sequential, Module])
+except Exception:
+    pass
 
-# Map Config
-MAP_RESOLUTION = 0.1
-MAP_ORIGIN_X = -15.0
-MAP_ORIGIN_Y = -15.0
+# PARAMETERS
+
+TIME_STEP = 64
+FRAME_SKIP = 1
+DEBUG_VIEW = True
+
+# Detection
+YOLO_MODEL = "yolov8n.pt"
+YOLO_CONF = 0.15
+TARGET_CLASSES = [39]          # 39 = bottle
+CAMERA_RESIZE = (320, 240)
+
+# Motion & State
+CAMERA_WARMUP_STEPS = 5
+LOST_DETECTION_TOLERANCE = 50
+STOPPING_SPEED = 0.05
+MAX_FORWARD_SPEED = 0.20
+KP_TURN = 0.0035
+TARGET_LOCK_THRESHOLD = 5
+IDEAL_STOP_Y_RATIO = 0.80
+FINAL_STOP_Y_RATIO = 0.90
 NUM_PARTICLES = 200
 
-# Helper Classes
+# Arm Timings
+PICK_PREP_FRAMES = 80
+GRIP_CLOSE_FRAMES = 150
+ARM_LIFT_FRAMES = 250
+COMPLETE_RESET_FRAMES = 30
 
-class ArmHeight:
-    ARM_RESET = 2
-    ARM_MAX_HEIGHT = 7
-    PRESETS = {
-        2: [1.57, -2.635, 1.78, 0.0],
-        0: [0.92, 0.42, 1.78, 0.0],
-        6: [-0.97, -1.55, -0.61, 0.0]
-    }
+# Manual Speed
+MANUAL_SPEED = 0.3
 
-class ArmOrientation:
-    ARM_FRONT = 3
-    ARM_MAX_SIDE = 7
-    PRESETS = { 3: 0.0 }
+# INITIALIZATION
 
-class YoubotGripper:
-    def __init__(self, robot):
-        self.f1, self.f2 = robot.getDevice("finger1"), robot.getDevice("finger2")
-        if self.f1: self.f1.setVelocity(0.03); self.f2.setVelocity(0.03)
-    def grip(self):
-        if self.f1: self.f1.setPosition(0.0); self.f2.setPosition(0.0)
+robot = Robot()
 
-class YoubotArm:
-    def __init__(self, robot):
-        self.el = [robot.getDevice(f"arm{i}") for i in range(1, 6)]
-        self.current_height = ArmHeight.ARM_RESET
-        self.current_orientation = ArmOrientation.ARM_FRONT
-        if self.el[1]: self.el[1].setVelocity(0.5)
-        self.reset()
-    def reset(self):
-        self.set_height(ArmHeight.ARM_RESET)
-        self.set_orientation(ArmOrientation.ARM_FRONT)
-    def set_height(self, h):
-        if h in ArmHeight.PRESETS:
-            vals = ArmHeight.PRESETS[h]
-            for i in range(4):
-                if self.el[i+1]: self.el[i+1].setPosition(vals[i])
-        self.current_height = h
-    def set_orientation(self, o):
-        if o in ArmOrientation.PRESETS and self.el[0]:
-            self.el[0].setPosition(ArmOrientation.PRESETS[o])
-        self.current_orientation = o
-    def increase_height(self): self.set_height(min(self.current_height + 1, ArmHeight.ARM_MAX_HEIGHT - 1))
-    def decrease_height(self): self.set_height(max(self.current_height - 1, 0))
-    def increase_orientation(self): self.set_orientation(min(self.current_orientation + 1, ArmOrientation.ARM_MAX_SIDE - 1))
-    def decrease_orientation(self): self.set_orientation(max(self.current_orientation - 1, 0))
+# 1. Initilizing Components
+base = YoubotBase(robot)
+arm = YoubotArm(robot)
+gripper = YoubotGripper(robot)
 
-class YoubotBase:
-    def __init__(self, robot):
-        self.w = [robot.getDevice(f"wheel{i}") for i in range(1, 5)]
-        for w in self.w: w.setPosition(float('inf')); w.setVelocity(0.0)
-        self.vx, self.vy, self.omega = 0.0, 0.0, 0.0
-    def update(self):
-        g = LX + LY
-        s = [(1/WHEEL_RADIUS)*(self.vx + self.vy + g*self.omega),
-             (1/WHEEL_RADIUS)*(self.vx - self.vy - g*self.omega),
-             (1/WHEEL_RADIUS)*(self.vx - self.vy + g*self.omega),
-             (1/WHEEL_RADIUS)*(self.vx + self.vy - g*self.omega)]
-        for i in range(4): self.w[i].setVelocity(s[i])
-    def reset(self): self.vx=0; self.vy=0; self.omega=0; self.update()
+# 2. Initializing Sensors
+camera = robot.getDevice("camera")
+if camera:
+    camera.enable(TIME_STEP)
+    cam_w, cam_h = camera.getWidth(), camera.getHeight()
+else:
+    print("[ERROR] Camera not found")
+    cam_w, cam_h = 320, 240 # Fallback
 
-# Visualizer
-class ParticleVisualizer:
-    def __init__(self, robot, map_grid, display_name="particle_display"):
-        self.display = robot.getDevice(display_name)
-        self.map_grid = map_grid
-        if self.display:
-            self.width = self.display.getWidth()
-            self.height = self.display.getHeight()
-            self.bg_image = np.zeros((self.height, self.width, 3), dtype=np.uint8)
-            h, w = map_grid.shape
-            limit_h, limit_w = min(h, self.height), min(w, self.width)
+lidar = robot.getDevice("lidar")
+if lidar: 
+    lidar.enable(TIME_STEP)
+    lidar.enablePointCloud()
+
+gps = robot.getDevice("gps")
+if gps: gps.enable(TIME_STEP)
+
+keyboard = robot.getKeyboard()
+keyboard.enable(TIME_STEP)
+
+# 3. Initializing Particle Filter
+pf = ParticleFilter("final_map.npy", NUM_PARTICLES)
+vis = ParticleVisualizer(robot, pf.map_grid)
+
+# 4. Initializing YOLO
+print("[INFO] Loading YOLO...")
+try:
+    yolo = YOLO(YOLO_MODEL)
+    print("[INFO] YOLO Ready.")
+except Exception as e:
+    print(f"[WARN] YOLO Failed to load: {e}")
+    yolo = None
+
+# YOLO DETECTION FUNCTION
+
+def detect_bottle(image):
+    global DEBUG_VIEW
+    if yolo is None or image is None: return None
+    
+    frame = np.frombuffer(image, np.uint8).reshape((cam_h, cam_w, 4))
+    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
+    
+    # Run YOLO on resized frame
+    results = yolo(cv2.resize(frame_bgr, CAMERA_RESIZE), 
+                   conf=YOLO_CONF, classes=TARGET_CLASSES, verbose=False)
+    
+    det = None
+    best_area = 0
+    boxes = results[0].boxes
+    
+    if boxes:
+        sx, sy = cam_w / CAMERA_RESIZE[0], cam_h / CAMERA_RESIZE[1]
+        for b in boxes:
+            xyxy = b.xyxy[0].cpu().numpy()
+            w = (xyxy[2]-xyxy[0]) * sx
+            h = (xyxy[3]-xyxy[1]) * sy
+            area = w * h
             
-            for y in range(limit_h):
-                for x in range(limit_w):
-                    val = 255 if map_grid[y, x] > 0 else 0
-                    self.bg_image[self.height - 1 - y, x] = [val, val, val]
-            
-            self.ir = self.display.imageNew(self.bg_image.tobytes(), Display.RGB, self.width, self.height)
-            self.display.imagePaste(self.ir, 0, 0, False)
-
-    def world_to_screen(self, wx, wy):
-        px = int((wx - MAP_ORIGIN_X) / MAP_RESOLUTION)
-        py = int((wy - MAP_ORIGIN_Y) / MAP_RESOLUTION)
-        px = max(0, min(px, self.width - 1))
-        py = max(0, min(py, self.height - 1))
-        return px, self.height - 1 - py
-
-    def update(self, particles, est_x, est_y, est_th, gps_x=None, gps_y=None):
-        if not self.display: return
-        self.display.imagePaste(self.ir, 0, 0, False)
-        
-        # Particles (Red)
-        self.display.setColor(0xFF0000)
-        for p in particles:
-            px, py = self.world_to_screen(p[0], p[1])
-            self.display.drawPixel(px, py)
-
-        # GPS (Blue Cross)
-        if gps_x is not None:
-            self.display.setColor(0x0000FF)
-            gx, gy = self.world_to_screen(gps_x, gps_y)
-            self.display.drawLine(gx-3, gy, gx+3, gy)
-            self.display.drawLine(gx, gy-3, gx, gy+3)
-
-        # Estimate (Green Cross)
-        self.display.setColor(0x00FF00)
-        ex, ey = self.world_to_screen(est_x, est_y)
-        self.display.drawLine(ex-4, ey, ex+4, ey)
-        self.display.drawLine(ex, ey-4, ex, ey+4)
-        # Visualizer uses the raw theta (Compass) to draw the line direction
-        hx, hy = self.world_to_screen(est_x + 0.6*math.cos(est_th), est_y + 0.6*math.sin(est_th))
-        self.display.drawLine(ex, ey, hx, hy)
-
-# Particle Filter
-class ParticleFilter:
-    def __init__(self, map_file, num_particles=200):
-        self.num_particles = num_particles
-        try:
-            raw_map = np.load(map_file)
-            self.map_grid = np.fliplr(raw_map)
-            print(f"Map Loaded: {self.map_grid.shape}")
-        except:
-            self.map_grid = np.zeros((300, 300)); self.map_grid[0,:]=1; self.map_grid[-1,:]=1
-        
-        self.height, self.width = self.map_grid.shape
-        self.particles = np.zeros((self.num_particles, 3))
-        self.weights = np.ones(self.num_particles) / self.num_particles
-        self.initialize_randomly()
-        
-        # North (Map) corresponds to East (Compass)
-        self.COMPASS_OFFSET = math.pi / 2
-
-    def initialize_randomly(self):
-        min_x = MAP_ORIGIN_X; max_x = MAP_ORIGIN_X + (self.width * MAP_RESOLUTION)
-        min_y = MAP_ORIGIN_Y; max_y = MAP_ORIGIN_Y + (self.height * MAP_RESOLUTION)
-        self.particles[:, 0] = np.random.uniform(min_x, max_x, self.num_particles)
-        self.particles[:, 1] = np.random.uniform(min_y, max_y, self.num_particles)
-        self.particles[:, 2] = np.random.uniform(-math.pi, math.pi, self.num_particles)
-
-    def motion_update(self, vx, vy, omega, dt):
-        # noise
-        sigma_xy = 0.02 
-        sigma_th = 0.03 
-
-        theta_map = self.particles[:, 2] + self.COMPASS_OFFSET
-        
-        c, s = np.cos(theta_map), np.sin(theta_map)
-        dx = (vx * c - vy * s) * dt
-        dy = (vx * s + vy * c) * dt
-        
-        self.particles[:, 0] += dx + np.random.normal(0, sigma_xy, self.num_particles)
-        self.particles[:, 1] += dy + np.random.normal(0, sigma_xy, self.num_particles)
-        self.particles[:, 2] += omega * dt + np.random.normal(0, sigma_th, self.num_particles)
-
-    def sensor_update_lidar(self, lidar_ranges, lidar_fov):
-        skip = 20
-        ranges = np.array(lidar_ranges[::skip])
-        valid = np.isfinite(ranges) & (ranges < 5.0)
-        ranges = ranges[valid]
-        if len(ranges) == 0: return
-
-        angles = np.linspace(-lidar_fov/2, lidar_fov/2, len(lidar_ranges))[::skip][valid]
-        angles = angles + self.COMPASS_OFFSET
-        
-        for i in range(self.num_particles):
-            px, py, pth = self.particles[i]
-            ga = pth + angles
-            ex = px + ranges * np.cos(ga)
-            ey = py + ranges * np.sin(ga)
-            
-            mx = ((ex - MAP_ORIGIN_X) / MAP_RESOLUTION).astype(int)
-            my = ((ey - MAP_ORIGIN_Y) / MAP_RESOLUTION).astype(int)
-            
-            # Bounds check
-            in_b = (mx >= 0) & (mx < self.width) & (my >= 0) & (my < self.height)
-            
-            # Map Logic: 1=Wall, 0=Free
-            # If ray lands on 1, add score.
-            score = np.sum(self.map_grid[my[in_b], mx[in_b]])
-            
-            # Add small baseline to avoid weight=0
-            self.weights[i] *= (score + 1e-5)
-
-        self.normalize_weights()
-
-    def sensor_update_gps(self, gps_x, gps_y):
-        dx = self.particles[:, 0] - gps_x
-        dy = self.particles[:, 1] - gps_y
-        dist_sq = dx**2 + dy**2
-        likelihood = np.exp(-dist_sq / (2 * GPS_NOISE_STD**2))
-        self.weights *= (likelihood + 1e-10)
-        self.normalize_weights()
-
-    def normalize_weights(self):
-        s = np.sum(self.weights)
-        if s == 0 or np.isnan(s): self.weights.fill(1.0/self.num_particles)
-        else: self.weights /= s
-
-    def resample(self):
-        # 1. Standard Resampling
-        ind = np.random.choice(self.num_particles, size=self.num_particles, p=self.weights)
-        self.particles = self.particles[ind]
-        self.weights.fill(1.0/self.num_particles)
-
-        # 2. Replace 5% of particles with random ones to handle "Kidnapped Robot"
-        num_inject = int(self.num_particles * 0.05) # 5%
-        if num_inject > 0:
-            min_x = MAP_ORIGIN_X; max_x = MAP_ORIGIN_X + (self.width * MAP_RESOLUTION)
-            min_y = MAP_ORIGIN_Y; max_y = MAP_ORIGIN_Y + (self.height * MAP_RESOLUTION)
-            
-            random_indices = np.random.choice(self.num_particles, num_inject, replace=False)
-            
-            self.particles[random_indices, 0] = np.random.uniform(min_x, max_x, num_inject)
-            self.particles[random_indices, 1] = np.random.uniform(min_y, max_y, num_inject)
-            self.particles[random_indices, 2] = np.random.uniform(-math.pi, math.pi, num_inject)
-
-    def get_estimate(self):
-        mx = np.mean(self.particles[:, 0])
-        my = np.mean(self.particles[:, 1])
-        mth = np.arctan2(np.mean(np.sin(self.particles[:, 2])), np.mean(np.cos(self.particles[:, 2])))
-        return mx, my, mth
-
-# --- Main Controller ---
-class YoubotController:
-    def __init__(self):
-        self.robot = Robot()
-        self.keyboard = self.robot.getKeyboard()
-        self.keyboard.enable(TIME_STEP)
-
-        self.base = YoubotBase(self.robot)
-        self.arm = YoubotArm(self.robot)
-        self.gripper = YoubotGripper(self.robot)
-        
-        self.lidar = self.robot.getDevice("lidar")
-        if self.lidar: self.lidar.enable(TIME_STEP); self.lidar.enablePointCloud()
-        
-        self.gps = self.robot.getDevice("gps")
-        if self.gps: self.gps.enable(TIME_STEP)
-
-        self.pf = ParticleFilter("final_map.npy", NUM_PARTICLES)
-        self.vis = ParticleVisualizer(self.robot, self.pf.map_grid)
-
-    def run(self):
-        self.base.reset(); self.gripper.grip(); self.arm.reset()
-        print("Controller Started (Inverted Map + Orientation Fix).")
-        
-        pc = 0
-        while self.robot.step(TIME_STEP) != -1:
-            c = self.keyboard.getKey()
-            if c >= 0 and c != pc:
-                is_shift = (c & Keyboard.SHIFT); key = (c & ~Keyboard.SHIFT)
-                if is_shift:
-                    if key==Keyboard.UP: self.arm.increase_height()
-                    elif key==Keyboard.DOWN: self.arm.decrease_height()
-                else:
-                    if key==Keyboard.UP: self.base.vx += SPEED_INCREMENT
-                    elif key==Keyboard.DOWN: self.base.vx -= SPEED_INCREMENT
-                    elif key==Keyboard.LEFT: self.base.vy += SPEED_INCREMENT
-                    elif key==Keyboard.RIGHT: self.base.vy -= SPEED_INCREMENT
-                    elif key==ord('n'): self.base.omega += SPEED_INCREMENT
-                    elif key==ord('m'): self.base.omega -= SPEED_INCREMENT
-                    elif key==ord(' '): self.base.reset(); self.arm.reset()
+            if area > best_area:
+                best_area = area
+                cx = (xyxy[0] + xyxy[2])/2 * sx
+                cy = (xyxy[1] + xyxy[3])/2 * sy
+                det = (int(cx), int(cy), int(area))
                 
-                self.base.vx = max(min(self.base.vx, MAX_SPEED), -MAX_SPEED)
-                self.base.vy = max(min(self.base.vy, MAX_SPEED), -MAX_SPEED)
-                self.base.omega = max(min(self.base.omega, MAX_SPEED), -MAX_SPEED)
-                self.base.update()
-            pc = c
+                if DEBUG_VIEW:
+                    x1, y1 = int(xyxy[0]*sx), int(xyxy[1]*sy)
+                    x2, y2 = int(xyxy[2]*sx), int(xyxy[3]*sy)
+                    cv2.rectangle(frame_bgr, (x1,y1), (x2,y2), (0,255,0), 2)
+                    cv2.putText(frame_bgr, f"{int(area)}", (x1, y1-10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 1)
 
-            dt = TIME_STEP/1000.0
-            if abs(self.base.vx)>0.01 or abs(self.base.vy)>0.01 or abs(self.base.omega)>0.01:
-                self.pf.motion_update(self.base.vx, self.base.vy, self.base.omega, dt)
+    if DEBUG_VIEW:
+        ideal_y = int(cam_h * IDEAL_STOP_Y_RATIO)
+        final_y = int(cam_h * FINAL_STOP_Y_RATIO)
+        cv2.line(frame_bgr, (0, ideal_y), (cam_w, ideal_y), (0, 255, 255), 1)
+        cv2.line(frame_bgr, (0, final_y), (cam_w, final_y), (0, 0, 255), 2)
+        try:
+            cv2.imshow("YOLO Vision", frame_bgr)
+            cv2.waitKey(1)
+        except cv2.error:
+            print("[WARN] OpenCV GUI not supported (cv2.imshow failed). Disabling DEBUG_VIEW.")
+            DEBUG_VIEW = False
+        
+    return det
 
-            #GPS Fusion
-            gx, gy = None, None
-            if self.gps:
-                vals = self.gps.getValues()
-                gx, gy = vals[0], vals[1]
-                self.pf.sensor_update_gps(gx, gy)
+# MAIN LOOP
 
-            # Lidar (If arm up)
-            # if self.lidar and self.arm.current_height == ArmHeight.ARM_RESET:
-            r = self.lidar.getRangeImage()
-            if r: self.pf.sensor_update_lidar(r, self.lidar.getFov())
+arm.reset()
+gripper.open()
+
+frame_count = 0
+lost_counter = 0
+state = "SEARCHING"
+pickup_timer = 0
+target_lock_counter = 0
+target_position = None
+last_known_error = 0
+last_known_area = 0
+pc = 0
+
+print("Controller Started. Mode: YOLO Autonomous + PF + Manual Override")
+
+while robot.step(TIME_STEP) != -1:
+    frame_count += 1
+    
+    # Manual overide inputs
+    c = keyboard.getKey()
+    manual_active = False
+    
+    if c >= 0:
+        is_shift = (c & Keyboard.SHIFT)
+        key = (c & ~Keyboard.SHIFT)
+        
+        if is_shift and c != pc:
+            if key == Keyboard.UP: arm.increase_height()
+            elif key == Keyboard.DOWN: arm.decrease_height()
+        else:
+            if key == Keyboard.UP: base.vx = MANUAL_SPEED; manual_active = True
+            elif key == Keyboard.DOWN: base.vx = -MANUAL_SPEED; manual_active = True
+            elif key == Keyboard.LEFT: base.vy = MANUAL_SPEED; manual_active = True
+            elif key == Keyboard.RIGHT: base.vy = -MANUAL_SPEED; manual_active = True
+            elif key == ord('N'): base.omega = MANUAL_SPEED; manual_active = True
+            elif key == ord('M'): base.omega = -MANUAL_SPEED; manual_active = True
+            elif key == ord(' '):
+                base.reset(); arm.reset()
+                state = "SEARCHING"; target_lock_counter = 0
+    pc = c
+
+    # Autonomous Logic (YOLO)
+    if not manual_active:
+        if frame_count > CAMERA_WARMUP_STEPS and frame_count % FRAME_SKIP == 0 and camera:
+            image = camera.getImage()
+            detection = detect_bottle(image)
             
-            self.pf.resample()
-            
-            ex, ey, eth = self.pf.get_estimate()
-            self.vis.update(self.pf.particles, ex, ey, eth, gx, gy)
-            # self.vis.update(self.pf.particles, ex, ey, eth)
+            # Update tracking info
+            if detection:
+                center_x, center_y, area = detection
+                error = center_x - cam_w // 2
+                lost_counter = 0
+                last_known_error = error
+                last_known_area = area
+                
+                if target_lock_counter < TARGET_LOCK_THRESHOLD:
+                    target_lock_counter += 1
+            else:
+                lost_counter += 1
+                target_lock_counter = 0
 
-if __name__ == "__main__":
-    YoubotController().run()
+            # State Machine
+            if state == "SEARCHING":
+                if target_lock_counter >= TARGET_LOCK_THRESHOLD:
+                    state = "APPROACH"
+                    print("[STATE] APPROACH")
+                else:
+                    base.omega = 0.3
+                    base.vx = 0; base.vy = 0
+            
+            elif state == "APPROACH":
+                if detection:
+                    final_y = cam_h * FINAL_STOP_Y_RATIO
+                    ideal_y = cam_h * IDEAL_STOP_Y_RATIO
+                    
+                    if center_y >= final_y:
+                        base.stop()
+                        state = "PICKING"
+                        pickup_timer = 0
+                        print("[STATE] PICKING")
+                    else:
+                        base.omega = np.clip(-error * KP_TURN, -0.5, 0.5)
+                        
+                        if center_y < ideal_y:
+                            ratio = (ideal_y - center_y) / ideal_y
+                            base.vx = np.clip(ratio * MAX_FORWARD_SPEED, STOPPING_SPEED, MAX_FORWARD_SPEED)
+                        else:
+                            base.vx = STOPPING_SPEED
+                        base.vy = 0
+                else:
+                    if lost_counter > LOST_DETECTION_TOLERANCE:
+                        state = "SEARCHING"
+                    else:
+                        base.omega = np.clip(-last_known_error * KP_TURN, -0.4, 0.4)
+
+            elif state == "PICKING":
+                pickup_timer += 1
+                if pickup_timer < PICK_PREP_FRAMES:
+                    arm.set_raw_pos([0.0, -0.97, -1.55, -0.61, 0.0]) # Pick
+                    gripper.open()
+                elif pickup_timer < GRIP_CLOSE_FRAMES:
+                    gripper.grip()
+                elif pickup_timer < ARM_LIFT_FRAMES:
+                    arm.set_raw_pos([2.949, 0.92, 0.42, 1.78, 0.0]) # Lift
+                else:
+                    state = "COMPLETE"
+                    base.stop()
+                    pickup_timer = 0
+            
+            elif state == "COMPLETE":
+                pickup_timer += 1
+                if pickup_timer == 1:
+                    arm.reset(); gripper.open()
+                    target_lock_counter = 0
+                elif pickup_timer > COMPLETE_RESET_FRAMES:
+                    state = "SEARCHING"
+                    pickup_timer = 0
+                else:
+                    base.stop()
+        else:
+            if state != "PICKING" and state != "COMPLETE":
+                base.stop()
+    
+    # Particles
+    base.update()
+    
+    dt = TIME_STEP / 1000.0
+    if abs(base.vx) > 0.01 or abs(base.vy) > 0.01 or abs(base.omega) > 0.01:
+        pf.motion_update(base.vx, base.vy, base.omega, dt)
+
+    if gps:
+        v = gps.getValues()
+        pf.sensor_update_gps(v[0], v[1])
+        
+    if lidar:
+        r = lidar.getRangeImage()
+        if r: pf.sensor_update_lidar(r, lidar.getFov())
+
+    pf.resample()
+    ex, ey, eth = pf.get_estimate()
+    
+    gx, gy = (gps.getValues()[0], gps.getValues()[1]) if gps else (None, None)
+    vis.update(pf.particles, ex, ey, eth, gx, gy)
+
+cv2.destroyAllWindows()

@@ -68,6 +68,7 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/lights/protos/DoubleFluorescentLamp.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/chairs/protos/WoodenChair.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/chairs/protos/OfficeChair.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/drinks/protos/WaterBottle.proto"
 
 WorldInfo {
   info [
@@ -88,8 +89,8 @@ WorldInfo {
   ]
 }
 DEF VIEWPOINT Viewpoint {
-  orientation -0.037942305100458436 -0.9977426102383764 0.05540816905813598 5.080278393166374
-  position -3.768525469458524 7.395694624639216 9.767580158511672
+  orientation -0.20239844699143555 -0.12347464952657472 0.9714879719171745 4.2116214690198
+  position 0.20531395239142028 7.394465103585021 0.2707731117800913
   follow "youBot"
   ambientOcclusionRadius 1
 }
@@ -590,8 +591,8 @@ DEF PLATFORM Pose {
           boundingObject USE SHAPE
         }
         Door {
-          hidden translation_4 0.0009021526515814449 2.7779862527776977e-05 1.5543122344752192e-15
-          hidden rotation_4 0 0 -1 0.00018638082217653344
+          hidden translation_4 0.0009021526515815559 2.7779862528221066e-05 2.4424906541753444e-15
+          hidden rotation_4 0 0 -1 0.00018638081741113738
           hidden position_5_0 0.02000039295244928
           hidden rotation_6 -0.9999999999999999 0 0 3.9311963195422116e-07
           translation 1.47 -0.81 0
@@ -1029,7 +1030,7 @@ DEF PLATFORM Pose {
     }
     Cabinet {
       hidden position_6_0 6.3997993593598814e-06
-      hidden translation_7 -1.2735600725039221e-06 -4.0752679009159465e-12 0
+      hidden translation_7 -1.2735600725039217e-06 -4.0752679009159465e-12 0
       hidden rotation_7 0 0 1 6.399801531773194e-06
       hidden position_10_0 -5.440792319788557e-06
       hidden translation_11 -9.203100208876937e-07 2.5036084316809593e-12 0
@@ -1145,10 +1146,10 @@ TrafficCone {
 }
 Cabinet {
   hidden position_6_0 7.99842288348801e-06
-  hidden translation_7 -1.9896076922464298e-06 -7.956663106156725e-12 0
+  hidden translation_7 -1.9896076922464306e-06 -7.956552083854262e-12 0
   hidden rotation_7 0 0 1 7.998412554542656e-06
   hidden position_10_0 -9.117582023598914e-06
-  hidden translation_11 -2.5855183223062433e-06 1.178646069632805e-11 0
+  hidden translation_11 -2.585518322306246e-06 1.1786238651723124e-11 0
   hidden rotation_11 0 0 -1 9.11756257836473e-06
   translation -2.70511 11.1138 0
   rotation 0 0 -1 1.5708
@@ -1563,30 +1564,30 @@ DEF EXERCISES_BOARD Robot {
     }
     LeverValve {
       hidden position_0_0 -1.7535128946191413e-06
-      hidden translation_1 0 3.507025789236485e-08 -3.0760116676020743e-14
+      hidden translation_1 0 3.5070257892364835e-08 -3.076705556992465e-14
       hidden rotation_1 -1 0 0 1.753531775874629e-06
       translation -0.29511 10.9638 1.87
       rotation 0.5773502691896258 -0.5773502691896258 0.5773502691896258 -2.094395307179586
     }
     LargeValve {
       hidden position_0_0 -15.70796321204703
-      hidden translation_1 1.942890293094024e-16 -5.306032173635339e-10 -1.9081958235744878e-17
+      hidden translation_1 3.0531133177191805e-16 -5.306032173635339e-10 -1.9081958235744878e-17
       hidden rotation_1 1 0 0 5.960464477539063e-08
       translation -0.28 10.6038 1.2499999999999045
       rotation 0 0 1 -1.5707953071795862
     }
     Cabinet {
       hidden position_6_0 1.071648360833229e-05
-      hidden translation_7 -3.5720718986789863e-06 -1.9140411477991393e-11 0
+      hidden translation_7 -3.572071898678984e-06 -1.9140633522596318e-11 0
       hidden rotation_7 0 0 1 1.0716494110684724e-05
       hidden position_10_0 -1.0716483607755928e-05
-      hidden translation_11 -3.5720718984868703e-06 1.9140411477991393e-11 0
+      hidden translation_11 -3.572071898486868e-06 1.9140633522596318e-11 0
       hidden rotation_11 0 0 -1 1.0716494110684724e-05
       hidden position_14_0 1.0716483608339523e-05
-      hidden translation_15 -3.5720718986813978e-06 -1.9140411477991393e-11 0
+      hidden translation_15 -3.5720718986813956e-06 -1.9140633522596318e-11 0
       hidden rotation_15 0 0 1 1.0716494110684724e-05
       hidden position_18_0 -1.0716483607756968e-05
-      hidden translation_19 -3.572071898487217e-06 1.9140411477991393e-11 0
+      hidden translation_19 -3.572071898487215e-06 1.9140633522596318e-11 0
       hidden rotation_19 0 0 -1 1.0716494110684724e-05
       translation -0.25511 11.1138 0
       rotation 0 0 -1 1.5708
@@ -2091,7 +2092,7 @@ Cabinet {
 }
 Cabinet {
   hidden position_6_0 6.399799359355103e-06
-  hidden translation_7 -1.2735600725029713e-06 -4.0752679009159465e-12 0
+  hidden translation_7 -1.2735600725029709e-06 -4.0752679009159465e-12 0
   hidden rotation_7 0 0 0.9999999999999999 6.399801531773194e-06
   hidden position_10_0 -5.440792319717896e-06
   hidden translation_11 -9.203100208757416e-07 2.5036084316809593e-12 0
@@ -2175,7 +2176,7 @@ Cabinet {
 }
 Cabinet {
   hidden position_6_0 6.399799359346541e-06
-  hidden translation_7 -1.2735600725012673e-06 -4.0752679009159465e-12 0
+  hidden translation_7 -1.2735600725012669e-06 -4.0752679009159465e-12 0
   hidden rotation_7 0 0 1 6.399801531773194e-06
   hidden position_10_0 -5.440792319788557e-06
   hidden translation_11 -9.203100208876937e-07 2.5036084316809593e-12 0
@@ -2217,7 +2218,7 @@ Cabinet {
 }
 Cabinet {
   hidden position_6_0 6.399799359360654e-06
-  hidden translation_7 -1.2735600725040758e-06 -4.0752679009159465e-12 0
+  hidden translation_7 -1.2735600725040754e-06 -4.0752679009159465e-12 0
   hidden rotation_7 0 0 1 6.399801531773194e-06
   hidden position_10_0 -5.440792319788557e-06
   hidden translation_11 -9.203100208876937e-07 2.5036084316809593e-12 0
@@ -2238,7 +2239,7 @@ Cabinet {
 }
 Cabinet {
   hidden position_6_0 6.3997993593622785e-06
-  hidden translation_7 -1.2735600725043992e-06 -4.0752679009159465e-12 0
+  hidden translation_7 -1.2735600725043988e-06 -4.0752679009159465e-12 0
   hidden rotation_7 0 0 1 6.399801531773194e-06
   hidden position_10_0 -5.440792319788557e-06
   hidden translation_11 -9.203100208876937e-07 2.5036084316809593e-12 0
@@ -2259,7 +2260,7 @@ Cabinet {
 }
 Cabinet {
   hidden position_6_0 6.3997993593513866e-06
-  hidden translation_7 -1.2735600725022316e-06 -4.0752679009159465e-12 0
+  hidden translation_7 -1.2735600725022312e-06 -4.0752679009159465e-12 0
   hidden rotation_7 0 0 0.9999999999999999 6.399801531773194e-06
   hidden position_10_0 -5.440792319788557e-06
   hidden translation_11 -9.203100208876937e-07 2.5036084316809593e-12 0
@@ -2280,7 +2281,7 @@ Cabinet {
 }
 Cabinet {
   hidden position_6_0 6.3997993593594215e-06
-  hidden translation_7 -1.2735600725038306e-06 -4.0752679009159465e-12 0
+  hidden translation_7 -1.2735600725038302e-06 -4.0752679009159465e-12 0
   hidden rotation_7 0 0 1 6.399801531773194e-06
   hidden position_10_0 -5.440792319788557e-06
   hidden translation_11 -9.203100208876937e-07 2.5036084316809593e-12 0
@@ -2322,7 +2323,7 @@ Cabinet {
 }
 Cabinet {
   hidden position_6_0 6.3997993593578105e-06
-  hidden translation_7 -1.27356007250351e-06 -4.0752679009159465e-12 0
+  hidden translation_7 -1.2735600725035096e-06 -4.0752679009159465e-12 0
   hidden rotation_7 0 0 1 6.399801531773194e-06
   hidden position_10_0 -5.440792319788557e-06
   hidden translation_11 -9.203100208876937e-07 2.5036084316809593e-12 0
@@ -2347,7 +2348,7 @@ DEF FIRST_AID_BOX Pose {
   children [
     Cabinet {
       hidden position_6_0 -4.801569248438929e-06
-      hidden translation_7 -7.166342103267556e-07 1.7206791547152989e-12 0
+      hidden translation_7 -7.166342103267551e-07 1.7207901770177614e-12 0
       hidden rotation_7 0 0 -1 4.801597173710736e-06
       rotation 0 0 1 3.14159
       name "cabinet(4)"
@@ -2512,9 +2513,9 @@ PlatformCart {
   hidden position_0_2 2.3247971644575804e-06
   hidden position_0_3 2.327411429897368e-06
   hidden rotation_2 0.9999999999986455 1.2194892475568615e-06 -1.1053563031553529e-06 1.570800000001221
-  hidden rotation_3 0.9999999999986391 1.244939521084123e-06 -1.0825148390918793e-06 1.570800000001172
-  hidden rotation_4 0.9999999999986489 1.162394312507181e-06 -1.1623985822277437e-06 1.570800000001351
-  hidden rotation_5 0.9999999999986459 1.1637014404257146e-06 -1.163705714947635e-06 1.5708000000013542
+  hidden rotation_3 0.9999999999986391 1.2449395210841238e-06 -1.0825148390918793e-06 1.570800000001172
+  hidden rotation_4 0.9999999999986489 1.162394312507181e-06 -1.162398582227744e-06 1.570800000001351
+  hidden rotation_5 0.9999999999986459 1.1637014404257153e-06 -1.1637057149476358e-06 1.5708000000013542
   translation 2.887194560496797 4.170400256200023 -0.0054090529472292925
   rotation 0.0003468843178595668 -0.0013392018644598843 0.9999990431043605 3.1415891176214976
   name "platform cart(1)"
@@ -3169,8 +3170,8 @@ Wall {
   }
 }
 Door {
-  hidden translation_5 0.0010731429323686537 -2.2937597710104285e-05 0
-  hidden rotation_5 0 0 1 0.00015398139275636698
+  hidden translation_5 0.0010731429323685426 -2.2937597710437352e-05 0
+  hidden rotation_5 0 0 1 0.00015398138698827758
   hidden position_6_0 0.020000392952592032
   hidden rotation_7 -1 0 0 3.9198835009234925e-07
   translation 3.575 7.218 0
@@ -3246,7 +3247,7 @@ DEF WINDOW_DOOR_BLOCK Pose {
   rotation 0 0 1 3.141592644
   children [
     Door {
-      hidden translation_5 0.0010709702026994727 -2.2256408724274923e-05 -2.220446049250313e-15
+      hidden translation_5 0.0010709702026993617 -2.225640872460799e-05 -3.1086244689504383e-15
       hidden rotation_5 0 0 1 0.00014940745114065635
       rotation 0 0 1 3.14159
       name "door(4)"
@@ -4142,7 +4143,7 @@ DEF BLACK_TILES Pose {
   ]
 }
 Door {
-  hidden translation_5 0.0010709702026995005 -2.2256408724274923e-05 -2.220446049250313e-15
+  hidden translation_5 0.0010709702026993895 -2.225640872460799e-05 -3.1086244689504383e-15
   hidden rotation_5 0 0 1 0.00014940745114065635
   translation 2.4249 11.23 0
   rotation 0 0 1 1.5708
@@ -5266,8 +5267,7 @@ Robot {
     Compass {
     }
     GPS {
-	  accuracy 0.02
-	  noise 0.01
+      accuracy 0.02
     }
     Solid {
       translation -0.134499 -0.119257 0.06
@@ -5364,6 +5364,8 @@ Robot {
               url [
                 "https://www.shutterstock.com/image-photo/professional-optical-lens-modern-dslr-600nw-2439065523.jpg"
               ]
+              repeatS FALSE
+              repeatT FALSE
             }
           }
           geometry Cylinder {
@@ -7059,153 +7061,19 @@ Robot {
   }
   controller "youbot_controller_py"
 }
-Solid {
-  translation 1.2 0.5 0.049960798812087766
-  rotation -0.993633563153662 0.09033032392305798 0.06732588472877786 1.1799073194378957e-16
-  children [
-    Shape {
-      appearance Appearance {
-        material Material {
-          diffuseColor 1 0 0
-          emissiveColor 0.8 0 0
-        }
-      }
-      geometry Box {
-        size 0.1 0.1 0.1
-      }
-    }
-  ]
-  name "red_trash_1"
-  boundingObject Box {
-    size 0.1 0.1 0.1
-  }
-  physics Physics {
-    density -1
-    mass 0.1
-  }
+WaterBottle {
+  translation 0 5.03 0
+  name "water bottle 1"
 }
-Solid {
-  translation -0.8 1 0.059941198181148216
-  rotation -0.7059952510588047 0.7059952510588127 -0.056048291363958294 4.193505165783538e-17
-  children [
-    Shape {
-      appearance Appearance {
-        material Material {
-          diffuseColor 1 0 0
-          emissiveColor 0.8 0 0
-        }
-      }
-      geometry Box {
-        size 0.12 0.12 0.12
-      }
-    }
-  ]
-  name "red_trash_2"
-  boundingObject Box {
-    size 0.12 0.12 0.12
-  }
-  physics Physics {
-    density -1
-    mass 0.15
-  }
+WaterBottle {
+  translation 0 1.73 0
+  name "water bottle 2"
 }
-Solid {
-  translation 0.5 1.5 0.044952958562669905
-  rotation -0.07413274953340214 0.9637257439342393 -0.2563923281321325 1.479125723020627e-16
-  children [
-    Shape {
-      appearance Appearance {
-        material Material {
-          diffuseColor 1 0 0
-          emissiveColor 0.8 0 0
-        }
-      }
-      geometry Box {
-        size 0.09 0.09 0.09
-      }
-    }
-  ]
-  name "red_trash_3"
-  boundingObject Box {
-    size 0.09 0.09 0.09
-  }
-  physics Physics {
-    density -1
-    mass 0.12
-  }
+WaterBottle {
+  translation 0 7.73 0
+  name "water bottle 3"
 }
-Solid {
-  translation -1.2 0.8 0.054949038436481946
-  rotation 0.829414456966841 -0.5529429713112274 -0.07953445198095875 4.9015381770921414e-17
-  children [
-    Shape {
-      appearance Appearance {
-        material Material {
-          diffuseColor 1 0 0
-          emissiveColor 0.8 0 0
-        }
-      }
-      geometry Box {
-        size 0.11 0.11 0.11
-      }
-    }
-  ]
-  name "red_trash_4"
-  boundingObject Box {
-    size 0.11 0.11 0.11
-  }
-  physics Physics {
-    density -1
-    mass 0.13
-  }
-}
-Solid {
-  translation 0.5 3.8 0.024979366119371547
-  rotation 0.058930902284685116 -0.3977835904215912 -0.9155847115080182 7.234330799765934e-16
-  children [
-    Shape {
-      appearance PBRAppearance {
-        baseColor 1 0 0
-        roughness 0.5
-        metalness 0
-      }
-      geometry Box {
-        size 0.05 0.05 0.05
-      }
-    }
-  ]
-  name "RedTrash_1"
-  boundingObject Shape {
-    geometry Box {
-      size 0.05 0.05 0.05
-    }
-  }
-  physics Physics {
-    mass 0.05
-  }
-}
-Solid {
-  translation 1.5 1.2 0.0399686390575611
-  rotation -0.391036508618233 0.9124185201092089 0.12075965008803168 1.5970387357395016e-16
-  children [
-    Shape {
-      appearance Appearance {
-        material Material {
-          diffuseColor 1 0 0
-          emissiveColor 0.8 0 0
-        }
-      }
-      geometry Box {
-        size 0.08 0.08 0.08
-      }
-    }
-  ]
-  name "red_trash_6"
-  boundingObject Box {
-    size 0.08 0.08 0.08
-  }
-  physics Physics {
-    density -1
-    mass 0.08
-  }
+WaterBottle {
+  translation 0 9.73 0
+  name "water bottle 4"
 }
