@@ -27,9 +27,8 @@ class ArmOrientation:
 
 class YoubotGripper:
     def __init__(self, robot):
-        self.f1, self.f2 = robot.getDevice("finger1"), robot.getDevice("finger2")
-        if not self.f1: self.f1 = robot.getDevice("finger::left")
-        if not self.f2: self.f2 = robot.getDevice("finger::right")
+        self.f1: self.f1 = robot.getDevice("finger::left")
+        self.f2: self.f2 = robot.getDevice("finger::right")
         
         if self.f1: self.f1.setVelocity(0.03)
         if self.f2: self.f2.setVelocity(0.03)

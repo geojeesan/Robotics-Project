@@ -1,4 +1,4 @@
-from controller import Robot, Keyboard
+from controller import Supervisor, Keyboard, Display
 import cv2
 import numpy as np
 import math
@@ -32,26 +32,37 @@ CAMERA_RESIZE = (320, 240)
 # Motion & State
 CAMERA_WARMUP_STEPS = 5
 LOST_DETECTION_TOLERANCE = 50
-STOPPING_SPEED = 0.05
-MAX_FORWARD_SPEED = 0.20
-KP_TURN = 0.0035
+STOPPING_SPEED = 0.15          
+MAX_FORWARD_SPEED = 0.60       
+KP_TURN = 0.015                
+
 TARGET_LOCK_THRESHOLD = 5
 IDEAL_STOP_Y_RATIO = 0.80
 FINAL_STOP_Y_RATIO = 0.90
 NUM_PARTICLES = 200
 
 # Arm Timings
-PICK_PREP_FRAMES = 80
-GRIP_CLOSE_FRAMES = 150
-ARM_LIFT_FRAMES = 250
+PICK_PREP_FRAMES = 10 
+GRIP_CLOSE_FRAMES = 20
+ARM_LIFT_FRAMES = 30
 COMPLETE_RESET_FRAMES = 30
 
 # Manual Speed
-MANUAL_SPEED = 0.3
+MANUAL_SPEED = 0.6             
+
+# Grid Coordinates for Tray
+TRAY_SLOTS = [
+    (-0.2, -0.1), # Back Row, Right
+    (-0.2,  0.0), # Back Row, Center
+    (-0.2,  0.1), # Back Row, Left
+    (-0.1,  0.1), # Front Row, Left
+    (-0.1,  0.0), # Front Row, Center
+    (-0.1, -0.1)  # Front Row, Right
+]
 
 # INITIALIZATION
 
-robot = Robot()
+robot = Supervisor()
 
 # 1. Initilizing Components
 base = YoubotBase(robot)
@@ -67,7 +78,7 @@ else:
     print("[ERROR] Camera not found")
     cam_w, cam_h = 320, 240 # Fallback
 
-lidar = robot.getDevice("lidar")
+lidar = robot.getDevice("lidar") 
 if lidar: 
     lidar.enable(TIME_STEP)
     lidar.enablePointCloud()
@@ -78,11 +89,20 @@ if gps: gps.enable(TIME_STEP)
 keyboard = robot.getKeyboard()
 keyboard.enable(TIME_STEP)
 
-# 3. Initializing Particle Filter
+# 3. Initializing Displays
+debug_display = robot.getDevice("display")
+if debug_display:
+    print("[INFO] Webots Display found. Will use for debug if OpenCV window fails.")
+    w, h = debug_display.getWidth(), debug_display.getHeight()
+    black_img = np.zeros((h, w, 3), dtype=np.uint8).tobytes()
+    ir = debug_display.imageNew(black_img, Display.RGB, w, h)
+    debug_display.imagePaste(ir, 0, 0, False)
+
+# 4. Initializing Particle Filter
 pf = ParticleFilter("final_map.npy", NUM_PARTICLES)
 vis = ParticleVisualizer(robot, pf.map_grid)
 
-# 4. Initializing YOLO
+# 5. Initializing YOLO
 print("[INFO] Loading YOLO...")
 try:
     yolo = YOLO(YOLO_MODEL)
@@ -90,6 +110,107 @@ try:
 except Exception as e:
     print(f"[WARN] YOLO Failed to load: {e}")
     yolo = None
+
+# TRASH TELEPORT FUNCTIONS
+
+def find_closest_bottle(robot_node, ignored_ids=None, max_dist=100.0):
+    """Finds the closest node that matches the WaterBottle"""
+    if ignored_ids is None:
+        ignored_ids = set()
+        
+    root = robot.getRoot()
+    children = root.getField("children")
+    num_children = children.getCount()
+    
+    best_node = None
+    min_dist_sq = float('inf')
+    max_dist_sq = max_dist ** 2
+    
+    rx, ry, _ = robot_node.getPosition() 
+
+    for i in range(num_children):
+        node = children.getMFNode(i)
+        
+        if node is None:
+            continue
+            
+        # Checking if node is in "already collected" list
+        if node.getId() in ignored_ids:
+            continue
+
+        # Gathering Identifiers
+        n_type = node.getTypeName() 
+        n_def  = node.getDef()      
+        n_name = ""
+        
+        name_field = node.getField("name")
+        if name_field:
+            try:
+                if name_field.getType() == Supervisor.SF_STRING:
+                    n_name = name_field.getSFString()
+            except:
+                pass
+
+        is_bottle = False
+        
+        if "WaterBottle" in n_type or "Bottle" in n_type:
+            is_bottle = True
+        if not is_bottle and "water bottle" in n_name.lower():
+            is_bottle = True
+        if not is_bottle and "BOTTLE" in n_def.upper():
+            is_bottle = True
+        
+        if is_bottle:
+            bx, by, bz = node.getPosition()
+            dist_sq = (bx - rx)**2 + (by - ry)**2
+            
+            # Distance check
+            if dist_sq < max_dist_sq and dist_sq < min_dist_sq:
+                min_dist_sq = dist_sq
+                best_node = node
+
+    if best_node:
+        print(f"[INFO] Selected closest bottle (ID: {best_node.getId()}). Dist: {math.sqrt(min_dist_sq):.2f}m")
+    else:
+        if max_dist < 10.0:
+            print(f"[WARN] No bottle found within {max_dist}m.")
+        
+    return best_node
+
+def teleport_bottle_to_back(target_node, robot_node, slot_index=0):
+    """Teleports the given node to the back of the robot using grid pattern."""
+    if not target_node or not robot_node: 
+        return
+
+    # 1. Get Robot Position and Rotation Matrix
+    rx, ry, rz = robot_node.getPosition()
+    rot = robot_node.getOrientation() # 3x3 matrix as list of 9
+    
+    # 2. Determining Grid Position based on Slot Index
+    safe_index = slot_index % len(TRAY_SLOTS)
+    grid_x, grid_y = TRAY_SLOTS[safe_index]
+    
+    # Defining Offset (Relative to Robot)
+    off_x = grid_x
+    off_y = grid_y
+    off_z = 0.10 # Height above tray
+    
+    # If we loop around, stack them higher?
+    if slot_index >= len(TRAY_SLOTS):
+        off_z += 0.25 
+    
+    # 3. Applying Rotation to Offset
+    wx = rot[0]*off_x + rot[1]*off_y + rot[2]*off_z
+    wy = rot[3]*off_x + rot[4]*off_y + rot[5]*off_z
+    wz = rot[6]*off_x + rot[7]*off_y + rot[8]*off_z
+    
+    # 4. Set New Position
+    new_pos = [rx + wx, ry + wy, rz + wz]
+    
+    # Resetting physics
+    target_node.resetPhysics()
+    target_node.getField("translation").setSFVec3f(new_pos)
+    target_node.getField("rotation").setSFRotation([0, 0, 1, 0]) # Resetting rotation upright
 
 # YOLO DETECTION FUNCTION
 
@@ -112,34 +233,71 @@ def detect_bottle(image):
         sx, sy = cam_w / CAMERA_RESIZE[0], cam_h / CAMERA_RESIZE[1]
         for b in boxes:
             xyxy = b.xyxy[0].cpu().numpy()
-            w = (xyxy[2]-xyxy[0]) * sx
-            h = (xyxy[3]-xyxy[1]) * sy
+            x1, y1 = int(xyxy[0]*sx), int(xyxy[1]*sy)
+            x2, y2 = int(xyxy[2]*sx), int(xyxy[3]*sy)
+            
+            # Red colour Filtering to prevent Fire Extinguisher
+            if x1 < 0: x1 = 0
+            if y1 < 0: y1 = 0
+            if x2 >= cam_w: x2 = cam_w - 1
+            if y2 >= cam_h: y2 = cam_h - 1
+            
+            if x2 > x1 and y2 > y1:
+                roi = frame_bgr[y1:y2, x1:x2]
+                hsv_roi = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+                
+                # Lower Red
+                mask1 = cv2.inRange(hsv_roi, np.array([0, 100, 50]), np.array([10, 255, 255]))
+                # Upper Red
+                mask2 = cv2.inRange(hsv_roi, np.array([160, 100, 50]), np.array([180, 255, 255]))
+                mask = cv2.bitwise_or(mask1, mask2)
+                
+                red_pixels = cv2.countNonZero(mask)
+                total_pixels = (x2-x1) * (y2-y1)
+                red_ratio = red_pixels / total_pixels
+                
+                # If more than 25% of the box is strong red, assume it's a Fire Extinguisher
+                if red_ratio > 0.25:
+                    if DEBUG_VIEW:
+                        cv2.rectangle(frame_bgr, (x1,y1), (x2,y2), (0,0,255), 2)
+                        cv2.putText(frame_bgr, "IGNORED (RED)", (x1, y1-5), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,0,255), 1)
+                    continue
+
+            w = x2 - x1
+            h = y2 - y1
             area = w * h
             
             if area > best_area:
                 best_area = area
-                cx = (xyxy[0] + xyxy[2])/2 * sx
-                cy = (xyxy[1] + xyxy[3])/2 * sy
+                cx = (x1 + x2) // 2
+                cy = (y1 + y2) // 2
                 det = (int(cx), int(cy), int(area))
                 
-                if DEBUG_VIEW:
-                    x1, y1 = int(xyxy[0]*sx), int(xyxy[1]*sy)
-                    x2, y2 = int(xyxy[2]*sx), int(xyxy[3]*sy)
-                    cv2.rectangle(frame_bgr, (x1,y1), (x2,y2), (0,255,0), 2)
-                    cv2.putText(frame_bgr, f"{int(area)}", (x1, y1-10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 1)
+                # Draw Green Box for valid bottle
+                cv2.rectangle(frame_bgr, (x1,y1), (x2,y2), (0,255,0), 2)
+                cv2.putText(frame_bgr, f"{int(area)}", (x1, y1-10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 0), 1)
+
+    ideal_y = int(cam_h * IDEAL_STOP_Y_RATIO)
+    final_y = int(cam_h * FINAL_STOP_Y_RATIO)
+    cv2.line(frame_bgr, (0, ideal_y), (cam_w, ideal_y), (0, 255, 255), 1)
+    cv2.line(frame_bgr, (0, final_y), (cam_w, final_y), (0, 0, 255), 2)
 
     if DEBUG_VIEW:
-        ideal_y = int(cam_h * IDEAL_STOP_Y_RATIO)
-        final_y = int(cam_h * FINAL_STOP_Y_RATIO)
-        cv2.line(frame_bgr, (0, ideal_y), (cam_w, ideal_y), (0, 255, 255), 1)
-        cv2.line(frame_bgr, (0, final_y), (cam_w, final_y), (0, 0, 255), 2)
         try:
             cv2.imshow("YOLO Vision", frame_bgr)
             cv2.waitKey(1)
         except cv2.error:
-            print("[WARN] OpenCV GUI not supported (cv2.imshow failed). Disabling DEBUG_VIEW.")
-            DEBUG_VIEW = False
+            if debug_display:
+                frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+                disp_w, disp_h = debug_display.getWidth(), debug_display.getHeight()
+                frame_resized = cv2.resize(frame_rgb, (disp_w, disp_h))
+                ir = debug_display.imageNew(frame_resized.tobytes(), Display.RGB, disp_w, disp_h)
+                debug_display.imagePaste(ir, 0, 0, False)
+                debug_display.imageDelete(ir) 
+            else:
+                print("[WARN] OpenCV GUI not supported & No Webots Display found. Disabling DEBUG_VIEW.")
+                DEBUG_VIEW = False
         
     return det
 
@@ -147,6 +305,10 @@ def detect_bottle(image):
 
 arm.reset()
 gripper.open()
+
+# Tracking list for collected bottles
+collected_ids = set()
+find_closest_bottle(robot.getSelf(), collected_ids)
 
 frame_count = 0
 lost_counter = 0
@@ -192,7 +354,7 @@ while robot.step(TIME_STEP) != -1:
             image = camera.getImage()
             detection = detect_bottle(image)
             
-            # Update tracking info
+            # Updating tracking info
             if detection:
                 center_x, center_y, area = detection
                 error = center_x - cam_w // 2
@@ -212,21 +374,21 @@ while robot.step(TIME_STEP) != -1:
                     state = "APPROACH"
                     print("[STATE] APPROACH")
                 else:
-                    base.omega = 0.3
+                    base.omega = 0.6 
                     base.vx = 0; base.vy = 0
             
             elif state == "APPROACH":
+                final_y = cam_h * FINAL_STOP_Y_RATIO
+                ideal_y = cam_h * IDEAL_STOP_Y_RATIO
+                
                 if detection:
-                    final_y = cam_h * FINAL_STOP_Y_RATIO
-                    ideal_y = cam_h * IDEAL_STOP_Y_RATIO
-                    
                     if center_y >= final_y:
                         base.stop()
                         state = "PICKING"
                         pickup_timer = 0
-                        print("[STATE] PICKING")
+                        print(f"[STATE] PICKING REACHED")
                     else:
-                        base.omega = np.clip(-error * KP_TURN, -0.5, 0.5)
+                        base.omega = np.clip(-error * KP_TURN, -1.0, 1.0)
                         
                         if center_y < ideal_y:
                             ratio = (ideal_y - center_y) / ideal_y
@@ -235,33 +397,41 @@ while robot.step(TIME_STEP) != -1:
                             base.vx = STOPPING_SPEED
                         base.vy = 0
                 else:
-                    if lost_counter > LOST_DETECTION_TOLERANCE:
+                    if last_known_area > 20000:
+                        print(f"[STATE] Blind Pickup Triggered.")
+                        base.stop()
+                        state = "PICKING"
+                        pickup_timer = 0
+                    elif lost_counter > LOST_DETECTION_TOLERANCE:
                         state = "SEARCHING"
                     else:
                         base.omega = np.clip(-last_known_error * KP_TURN, -0.4, 0.4)
 
             elif state == "PICKING":
-                pickup_timer += 1
-                if pickup_timer < PICK_PREP_FRAMES:
-                    arm.set_raw_pos([0.0, -0.97, -1.55, -0.61, 0.0]) # Pick
-                    gripper.open()
-                elif pickup_timer < GRIP_CLOSE_FRAMES:
-                    gripper.grip()
-                elif pickup_timer < ARM_LIFT_FRAMES:
-                    arm.set_raw_pos([2.949, 0.92, 0.42, 1.78, 0.0]) # Lift
-                else:
+                robot_node = robot.getSelf()
+                
+                # Distance limit (1.5m) for picking
+                target_bottle = find_closest_bottle(robot_node, collected_ids, max_dist=1.5)
+                
+                if target_bottle:
+                    teleport_bottle_to_back(target_bottle, robot_node, len(collected_ids))
+                    b_id = target_bottle.getId()
+                    collected_ids.add(b_id)
+                    print(f"[ACTION] Teleported bottle {b_id} (Slot: {len(collected_ids)-1})")
                     state = "COMPLETE"
-                    base.stop()
-                    pickup_timer = 0
+                else:
+                    print("No bottle nearby (Possible ghost detection or too far). Resetting.")
+                    state = "COMPLETE" 
+                
+                base.stop()
+                pickup_timer = 0
             
             elif state == "COMPLETE":
                 pickup_timer += 1
-                if pickup_timer == 1:
-                    arm.reset(); gripper.open()
-                    target_lock_counter = 0
-                elif pickup_timer > COMPLETE_RESET_FRAMES:
+                if pickup_timer > 30: 
                     state = "SEARCHING"
                     pickup_timer = 0
+                    target_lock_counter = 0
                 else:
                     base.stop()
         else:
