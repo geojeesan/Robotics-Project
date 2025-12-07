@@ -59,8 +59,13 @@ camera.enable(TIME_STEP)
 cam_w = camera.getWidth()
 cam_h = camera.getHeight()
 
-range_finder = robot.getDevice('range-finder')
-range_finder.enable(TIME_STEP)
+lidar = robot.getDevice("lidar")
+lidar.enable(TIME_STEP)
+lidar.enablePointCloud()       # optional but helpful
+lidar_res = lidar.getHorizontalResolution()   # 512
+lidar_fov = lidar.getFov()                    # 1.5 rad
+lidar_max = lidar.getMaxRange()               # 8 m
+
 
 compass = robot.getDevice("compass")
 compass.enable(TIME_STEP)
@@ -125,22 +130,32 @@ def base_stop():
     base_move(0, 0, 0)
 
 def get_heading():
-    """
-    Returns compass heading aligned to ENU.
-    Webots Compass: [North_X, North_Y, North_Z] relative to Robot.
-    atan2(North_X, North_Y) correctly maps to ENU (0=East, 90=North) 
-    assuming standard Webots Robot Frame (x=Forward, y=Left).
-    """
+
     compass_values = compass.getValues()
     return math.atan2(compass_values[0], compass_values[1])
 
-def get_filtered_distance(range_image, cx, cy, width):
-    if range_image is None: return float('inf')
-    cx = max(0, min(cx, width - 1))
-    idx = int(cy * width + cx)
-    if 0 <= idx < len(range_image):
-        return range_image[idx]
-    return float('inf')
+def lidar_distance_from_camera_pixel(cx, cam_width, lidar_ranges):
+    """
+    Convert camera pixel index -> lidar beam index.
+    cx: camera pixel center (0..cam_width)
+    lidar_ranges: list of floats, size = lidar_res (512)
+    Returns distance (m) or inf.
+    """
+    if lidar_ranges is None or len(lidar_ranges) == 0:
+        return float('inf')
+
+    # camera pixel → normalized angle offset (-0.5 .. +0.5)
+    norm = (cx / cam_width) - 0.5        # -0.5 left, +0.5 right
+
+    # convert into lidar beam index
+    # lidar beams: 0 = leftmost, (res-1) = rightmost
+    lidar_index = int((norm + 0.5) * lidar_res)
+
+    # clamp
+    lidar_index = max(0, min(lidar_index, lidar_res - 1))
+
+    return lidar_ranges[lidar_index]
+
 
 def create_cone(x, y, z, name=""):
     root_node = robot.getRoot()
@@ -234,6 +249,7 @@ def detect_bottle(image):
         
     return det
 
+
 # ===============================================================
 # MAIN LOOP
 # ===============================================================
@@ -244,6 +260,7 @@ last_heading = 0.0
 state = "INIT"
 localization_timer = 0
 DEBUG=True
+collected_bottles=[]
 
 print(f"[{robot_name}] Controller Started. Waiting for localization (PF Pos + Compass Rot)...")
    
@@ -260,10 +277,9 @@ while robot.step(TIME_STEP) != -1:
         gps_vals = gps.getValues()
         pf.sensor_update_gps(gps_vals[0], gps_vals[1])
         
-        r_img = range_finder.getRangeImage()
-        if r_img: 
-            fov = range_finder.getFov()
-            pf.sensor_update_lidar(r_img, fov)
+        lidar_ranges = lidar.getRangeImage()
+        if lidar_ranges:
+            pf.sensor_update_lidar(lidar_ranges, lidar_fov)
             
         # C. Resample & Estimate
         pf.resample()
@@ -330,8 +346,9 @@ while robot.step(TIME_STEP) != -1:
                           # "proj1_deg:", math.degrees(t1), "->", (x1,y1),
                           # "proj2_deg:", math.degrees(t2), "->", (x2,y2))
                 center_x, center_y, _ = detection
-                range_image = range_finder.getRangeImage()
-                raw_dist = get_filtered_distance(range_image, center_x, center_y, cam_w)
+                lidar_ranges = lidar.getRangeImage()
+                raw_dist = lidar_distance_from_camera_pixel(center_x, cam_w, lidar_ranges)
+
                 
                 if raw_dist != float('inf') and raw_dist < 5.0:
                     fov = camera.getFov()
@@ -388,6 +405,29 @@ while robot.step(TIME_STEP) != -1:
         state = "WAITING"
 
     elif state == "WAITING":
-        base_stop()
+        # receive messages 
+         while receiver.getQueueLength() > 0:
+             packet=receiver.getString()
+             data=json.loads(packet)
+             if robot_name in data:
+                 state = "APPROACHING" # goto trash
+                 goto_x = data[robot_name]["goto_x"]
+                 goto_y = data[robot_name]["goto_y"]
+                 curr_heading = get_heading() 
+                 target_heading = math.atan2(goto_y,goto_x)
+                 delta = abs(target_heading-curr_heading)
+                 # rotate to face delta
+                 base_move(0,0,delta)
+                 state="PICKING"
+
+             else:
+                 # what to do if the robot was never assigned anything??
+                 state=="SEARCHING" # go back to searching I guess?
+    elif state == "PICKING":
+        # we now need to get the A* path from the supervisor. 
+        path = data[robot_name]["path"]
+        # need a function to follow this path 
+        
+             
 
 cv2.destroyAllWindows()

@@ -189,7 +189,9 @@ def get_path_cost(start_pos_w,goal_pos_w):
     p = a_star(start_pos,goal_pos,occupancy_grid)
     if p is None:
         return float('inf')
-    return len(p) # just g()    
+    else:
+        p= [grid2world(*coord) for coord in p]
+    return p,len(p) # just g()    
 
 robots_state={} # robot:{x:"",y:"",state:"INIT/EXECUTING"}
 global_trash_map=[] # list of {trashes:{x:"",y:""}}
@@ -308,7 +310,7 @@ while supervisor.step(TIME_STEP) != -1:
                     if key in cost_cache:
                         cost = cost_cache[key]
                     else:
-                        cost = get_path_cost(r_pos,t_pos)
+                        p,cost = get_path_cost(r_pos,t_pos)
                         cost_cache[key] = cost
                     if math.isinf(cost):
                         continue
@@ -338,7 +340,8 @@ while supervisor.step(TIME_STEP) != -1:
                 commands[r] = {
                     "goto_x":target_x,
                     "goto_y":target_y,
-                    "trash_id": global_trash_map[t_idx]['id']
+                    "trash_id": global_trash_map[t_idx]['id'],
+                    "path": p
                 }
                 
                 print(f"Assigning {r} -> Trash {t_idx} (Dist: {option['cost']:.2f})")
