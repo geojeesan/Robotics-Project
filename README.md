@@ -36,7 +36,7 @@ This project proposes an autonomous multi-robot cleaning system that achieves ef
 * **Global path planning using A***
 * **Probabilistic localisation via particle filters**
 
-The system is fully implemented and tested in **Webots**, using a modified *hall* environment representing a typical industrial space.
+The system is fully implemented and tested in **Webots**, using a modified YouBot to include a tray at the back to collect trash. 
 
 ---
 
@@ -112,8 +112,9 @@ Each robot (KUKA youBot) is equipped with:
 * Camera
 * LiDAR
 * GPS
+* RangeFinder
 * Compass
-* Gripper
+* Gripper (Not used to limit scope)
 * Waste container
 
 The robot transitions between:
@@ -155,7 +156,7 @@ Detection outputs (bounding boxes + confidence scores) are sent to the central s
 
 #### **Particle Initialisation**
 
-* 200 particles uniformly distributed in free space
+* 500 particles uniformly distributed in free space
 
 #### **Motion Model**
 
@@ -193,9 +194,8 @@ The supervisor node computes optimal paths using A* on a discretised 2D occupanc
 
 The coordination framework includes:
 
-* **Spatial Partitioning:** Each robot receives a designated cleaning sector
-* **Dynamic Task Allocation:** Supervisor assigns trash based on proximity and workload
-* **Collision Avoidance:** Robots broadcast local occupancy data
+* **Spatial Partitioning:** Each robot is essentially assigned a designated cleaning sector 
+* **Dynamic Task Allocation:** Supervisor assigns trash based on the A* path cost (i.e. the Manhattan distance)
 
 This hybrid method reduces:
 
