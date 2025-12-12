@@ -7,6 +7,12 @@
 
 ---
 
+## Additional packages used
+- opencv-python
+- numpy
+- ultralytics
+- torch
+
 ## **Abstract**
 
 Large indoor environments such as factories, exhibition halls, and warehouses pose significant logistical challenges in maintaining cleanliness due to their expansive areas and frequent human or machine traffic. Manual cleaning is labour-intensive, time-consuming, and prone to inefficiency.
