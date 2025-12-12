@@ -24,10 +24,6 @@ NUM_ROBOTS=5
 robot_names=[f"youbot_{4+i+1}" for i in range (NUM_ROBOTS)]
 print(robot_names)
 
-
-
-
-
 grid_height, grid_width = occupancy_grid.shape
 # creating a cell:neighbour map
 cell_neighbour_map={}
@@ -333,7 +329,7 @@ print("listening for data from robots...")
 # put random bottles
 
 create_bottles(occupancy_grid)
-randomise_robot_orientations()
+
 create_cone(-2.3504,6.65,-0.20,"test")
 while supervisor.step(TIME_STEP) != -1:
     while receiver.getQueueLength() > 0:
