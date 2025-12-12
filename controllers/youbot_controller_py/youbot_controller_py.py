@@ -65,12 +65,17 @@ TRAY_SLOTS = [
     (-0.1,  0.1), (-0.1,  0.0), (-0.1, -0.1)
 ]
 
+INTERRUPT_TOLERANCE = 1.0
+COLLISION_DIST = 0.40
+
 # ===============================================================
 # INITIALIZATION
 # ===============================================================
 
 robot = Supervisor()
 robot_name = robot.getName()
+timestep = int(robot.getBasicTimeStep())
+dt = timestep / 1000.0
 
 # Sensors
 camera = robot.getDevice("camera")
@@ -96,6 +101,8 @@ receiver.setChannel(-1)
 
 MAX_WHEEL_SPEED = 14.0
 CAMERA_OFFSET = (0.28, 0.05, 0.0)
+VISUAL_LOST_TIMEOUT = 1.0 
+visual_lost_timer = 0.0
 
 # Wheels
 wheel_names = ["wheel1", "wheel2", "wheel3", "wheel4"]
@@ -123,7 +130,14 @@ except Exception as e:
 
 # Load YOLO
 print("[INFO] Loading YOLOv8 model...")
+# Check if CUDA is available
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+print(f"[INFO] Using device: {device}")
+if device == 'cuda':
+    print(f"[INFO] GPU Name: {torch.cuda.get_device_name(0)}")
+
 yolo = YOLO(YOLO_MODEL)
+yolo.to(device)
 
 # ===============================================================
 # TELEPORT / PICKING LOGIC
@@ -246,8 +260,9 @@ def detect_bottle(image):
     frame = np.frombuffer(image, np.uint8).reshape((cam_h, cam_w, 4))
     frame_bgr = cv2.cvtColor(frame, cv2.COLOR_BGRA2BGR)
     
+    # Pass device=device to ensure inference happens on GPU
     results = yolo(cv2.resize(frame_bgr, CAMERA_RESIZE), 
-                   conf=YOLO_CONF, classes=TARGET_CLASSES, verbose=False)
+                   conf=YOLO_CONF, classes=TARGET_CLASSES, verbose=False, device=device)
     
     det = None
     best_area = 0
@@ -313,12 +328,16 @@ collected_bottles = set()
 current_waypoint_index = 0
 path = []
 final_goal_world = (0,0)
+ROTATE_ONLY_TIMEOUT = 2.0
+ROTATION_FORWARD_SPEED = 0.12
+rotation_only_timer = 0.0
 
 print(f"[{robot_name}] Controller Started.")
     
 while robot.step(TIME_STEP) != -1:
     image = camera.getImage()
     
+
     # PF Logic
     if pf_active:
         dt = TIME_STEP / 1000.0        
@@ -331,6 +350,39 @@ while robot.step(TIME_STEP) != -1:
         vis.update(pf.particles, est_x, est_y, pf_theta_est, gps_vals[0], gps_vals[1])
     else:
         est_x, est_y, _ = gps.getValues()
+        # --- NEW: PASSIVE COLLISION COLLECTION ---
+    # Check if we are touching any bottle (independent of current State)
+    touching_node = find_closest_bottle(robot.getSelf(), collected_bottles, max_dist=COLLISION_DIST)
+    
+    if touching_node:
+        bottle_id = touching_node.getId()
+        print(f"[{robot_name}] COLLISION DETECTED! collecting bottle ID {bottle_id}")
+        
+        # 1. Teleport Bottle
+        teleport_bottle_to_back(touching_node, robot.getSelf(), len(collected_bottles))
+        collected_bottles.add(bottle_id)
+        
+        # 2. Remove from internal memory (so we don't try to go to it later)
+        # We filter the list to keep only trashes that are NOT close to the collected one
+        # (This prevents ghost targets)
+        bx, by, _ = touching_node.getPosition()
+        detected_trash_list = [
+            t for t in detected_trash_list 
+            if math.hypot(t['x'] - bx, t['y'] - by) > 0.6
+        ]
+
+        # 3. Notify Supervisor (Update global map)
+        current_heading = get_heading()
+        payload = {
+            "robot": robot_name,
+            "pose": {"x": est_x, "y": est_y, "theta": current_heading},
+            "trash_world_coords": [], # No new trash seen, just status update
+            "status": "WAITING" 
+        }
+        
+        # Note: We send this to ensure the supervisor knows we are still alive/active
+        emitter.send(json.dumps(payload).encode('utf-8'))
+        state="WAITING"
 
     # -----------------------------------------------------------
     # 2. STATE MACHINE
@@ -345,9 +397,11 @@ while robot.step(TIME_STEP) != -1:
             accumulated_rotation = 0.0
             state = "SCANNING"
             last_heading = get_heading() 
-            base_move(0, 0, 1) # Start spinning
+            base_move(0, 0, 1) 
+
 
     elif state == "SCANNING":
+    
         current_heading = get_heading()
         delta = current_heading - last_heading
         
@@ -375,7 +429,7 @@ while robot.step(TIME_STEP) != -1:
                 rf_index = int(idx_y * rf_w + idx_x)
                 raw_dist = rf_data[rf_index]
                 
-                if raw_dist != float('inf') and raw_dist < 2.0:
+                if raw_dist != float('inf') and raw_dist < 3:
                     fov = camera.getFov()
                     # Left pixel (0) -> Positive Angle (Left Turn)
                     offset_angle = -1 * ((center_x / cam_w) - 0.5) * fov
@@ -421,6 +475,7 @@ while robot.step(TIME_STEP) != -1:
         emitter.send(msg.encode('utf-8'))
         print(f"[{robot_name}] Data sent. Status: WAITING")
         state = "WAITING"
+        print(state)
 
     elif state == "WAITING":
         base_stop()
@@ -439,6 +494,7 @@ while robot.step(TIME_STEP) != -1:
                         current_waypoint_index = 0
                         final_goal_world = (path[-1][0], path[-1][1])
                         state = "APPROACHING"
+                        print(f"[{robot_name}] {state}")
                         print(f"[{robot_name}] Following path with {len(path)} waypoints. Goal: {final_goal_world}")
                     else:
                         print(f"[{robot_name}] Received empty path.")
@@ -446,43 +502,69 @@ while robot.step(TIME_STEP) != -1:
                 pass
 
     elif state == "APPROACHING":
-        # Standard A* Path Following
+    # Standard A* Path Following
         if path and current_waypoint_index < len(path):
             target = path[current_waypoint_index]
             target_x, target_y = float(target[0]), float(target[1])
-            
+    
             theta = get_heading()
             dx = target_x - est_x
             dy = target_y - est_y
             distance = math.hypot(dx, dy)
             target_angle = math.atan2(dy, dx)
             heading_error = normalize_angle(target_angle - theta)
-
-            if distance < 0.20:
-                current_waypoint_index += 1
+    
+            # --- arrival / waypoint advance ---
+            if distance < ARRIVE_DIST:   # use ARRIVE_DIST constant you set earlier (0.15)
+                current_waypoint_index += 3
+                if current_waypoint_index >= len(path):
+                    print(f"[{robot_name}] Reached end of waypoints (index {current_waypoint_index} / {len(path)}). Switching to Visual Servoing.")
+                    base_stop()
+                    state = "VISUAL_SERVOING"
+                    rotation_only_timer = 0.0
+                    continue
+                rotation_only_timer=0.0
                 continue
-            
+                
             vx_cmd = 0.0
             omega_cmd = 0.0
-            
+    
+            # When heading error large: normally rotate-only
             if abs(heading_error) > 0.15:
                 omega_cmd = KP_ANG * heading_error
-                vx_cmd = 0.0 
+                vx_cmd = 0.0
+    
+                # rotation-only timer update (TIME_STEP is in ms)
+                rotation_only_timer += (TIME_STEP / 1000.0)
+    
+                # if we've been rotating-only too long, try a recovery:
+                if rotation_only_timer >= ROTATE_ONLY_TIMEOUT:
+                    print(f"[{robot_name}] Rotation watchdog triggered (headed {heading_error:.2f} rad). attempting recovery.")
+                    vx_cmd = ROTATION_FORWARD_SPEED
+                    rotation_only_timer = 0.0
+    
             else:
+                # heading aligned enough: drive toward target normally
+                omega_cmd = KP_ANG * heading_error
                 vx_cmd = KP_POS * distance
-                omega_cmd = KP_ANG * heading_error 
-
+                # reset rotation-only timer when we are making forward progress
+                rotation_only_timer = 0.0
+    
+            # saturate and slow when close
             vx_cmd = max(min(vx_cmd, MAX_VX), -MAX_VX)
-            if distance < SLOW_DIST: vx_cmd *= (distance / SLOW_DIST)
+            if distance < SLOW_DIST:
+                vx_cmd *= (distance / SLOW_DIST)
             omega_cmd = max(min(omega_cmd, MAX_OMEGA), -MAX_OMEGA)
-            
+    
             base_move(vx_cmd, 0.0, omega_cmd)
-
+    
         else:
             # End of Path -> Try to Pickup
             print(f"[{robot_name}] Path Complete. Switching to Visual Servoing.")
             base_stop()
             state = "VISUAL_SERVOING"
+    
+            print("[{robot_name}] {state}")
 
     elif state == "VISUAL_SERVOING":
         if image:
@@ -490,6 +572,7 @@ while robot.step(TIME_STEP) != -1:
             
             if detection:
                 # We have a visual target
+                visual_lost_timer=0
                 cx, cy, area = detection
                 
                 # Check AREA threshold for picking (Close Enough?)
@@ -497,17 +580,23 @@ while robot.step(TIME_STEP) != -1:
                     print(f"[{robot_name}] Bottle Close Enough (Area {area}). Picking.")
                     base_stop()
                     state = "PICKING"
+                    print(f"[{robot_name}] {state}")
                 else:
-                    # Visible but too small/far -> Approach
                     err_x = (cx / cam_w) - 0.5
                     omega = -err_x * 2.0
-                    vx = 0.2  # Slow approach speed
+                    vx = 0.7  # Slow approach speed
                     base_move(vx, 0, omega)
             else:
-                # Goal reached but NO visual target -> Spin to search
-                print(f"[{robot_name}] Searching for target (Spinning)...")
-                # Spin in place until a valid detection pops up in the 'if detection' block next loop
-                base_move(0, 0, 0.6)
+                visual_lost_timer+=dt
+                
+                if visual_lost_timer >= VISUAL_LOST_TIMEOUT:
+
+                    print(f"[{robot_name}] Searching for target (Spinning)...")
+                    visual_lost_timer=0                 
+                    accumulated_rotation = 0.0
+                    last_heading=get_heading()
+                    base_move(0, 0, 1) 
+                    state="SCANNING"
 
     elif state == "PICKING":
         print(f"[{robot_name}] Attempting to teleport/pick bottle...")

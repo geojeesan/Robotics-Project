@@ -15,7 +15,7 @@ receiver.enable(TIME_STEP)
 emitter=supervisor.getDevice("emitter")
 # load precomputed .npy file. This will be used across robots
 # want to map trashes and robot positions onto this map. 
-occupancy_grid= np.load("final_map.npy")
+occupancy_grid= np.fliplr(np.load("final_map.npy"))
 
 grid_height, grid_width = occupancy_grid.shape
 # creating a cell:neighbour map
@@ -48,9 +48,15 @@ for i in range(grid_height):
 MAP_RES = 0.1
 MAP_ORIGIN_X= -15
 MAP_ORIGIN_Y = -15
-NUM_BOTTLES=40
+NUM_BOTTLES=30
+NUM_ROBOTS=4
+# robot_list=[f"youbot_{i+1}" for i in in range(NUM_ROBOTS)]
 root_node = supervisor.getRoot()
 children_field = root_node.getField('children')
+
+
+# def create_robots(NUM_ROBOTS):
+    # with open "robot_vrml"
 
 def world2grid(world_x,world_y):
     rel_x = world_x - MAP_ORIGIN_X
@@ -70,24 +76,32 @@ def grid2world(row,col):
     world_y = MAP_ORIGIN_Y + (row + 0.5) * MAP_RES
     return world_x, world_y
 
-# build assignable coords AFTER helpers are defined
-assignable_coords = [grid2world(row,col) for row in range(grid_height) for col in range(grid_width) if occupancy_grid[row][col]==1]
-    
-def create_bottles(occupancy_grid):
-    # choose up to NUM_BOTTLES unique free cells
-    num_to_create = min(NUM_BOTTLES, len(assignable_coords))
-    if num_to_create == 0:
-        print("No free cells available to place bottles.")
-        return
-    chosen = random.sample(assignable_coords, num_to_create)
+assignable_coords = set([grid2world(row,col) for row in range(grid_height) for col in range(grid_width) if occupancy_grid[row][col]==1])
+num_to_create = min(NUM_BOTTLES, len(assignable_coords))
+chosen = set(random.sample(assignable_coords, num_to_create))
+available_positions= assignable_coords-chosen
 
+def randomise_robot_orientations():
+    youbot_list=["youbot_1","youbot_2","youbot_3","youbot_4"]
+    for robot in youbot_list:
+        robot_node=supervisor.getFromDef(robot)
+        rotation_field=robot_node.getField('rotation')
+        random_rotation=np.random.uniform(-math.pi,math.pi)
+        rot=[0,0,1,random_rotation]
+        rotation_field.setSFRotation(rot) 
+        trans_field=robot_node.getField("translation")
+        random_position = random.choice(list(available_positions))
+        w_x,w_y= random_position[0],random_position[1]
+        trans_field.setSFVec3f([w_x,w_y,0.0986])
+ 
+
+def create_bottles(occupancy_grid):
     for i, (b_x, b_y) in enumerate(chosen):
         bottle_vrml = f"""
         WaterBottle {{
           translation  {b_x} {b_y} 0
           rotation 0.8435777383914596 0.49366584760060905 -0.21135427651959723 1.5830930893672932e-16
           name "water_bottle_{i}"
-          mass 0
         }}
         """
         children_field.importMFNodeFromString(-1, bottle_vrml)
@@ -296,7 +310,8 @@ print("listening for data from robots...")
 # put random bottles
 
 create_bottles(occupancy_grid)
-
+randomise_robot_orientations()
+create_cone(-2.3504,6.65,-0.20,"test")
 while supervisor.step(TIME_STEP) != -1:
     while receiver.getQueueLength() > 0:
         packet=receiver.getString()
@@ -320,8 +335,6 @@ while supervisor.step(TIME_STEP) != -1:
     unassigned_trash = any(t['assigned_to'] is None for t in global_trash_map)
     
     if available_robots and unassigned_trash:
-        print(f"Available robots: {available_robots}")
-        print(f"Unassigned trash: {unassigned_trash}")
         assignments=[]
         cost_cache = {}
         for robot in available_robots:
@@ -369,12 +382,14 @@ while supervisor.step(TIME_STEP) != -1:
                 }
                 
                 print(f"Assigning {r} -> Trash {t_idx} (Dist: {option['cost']:.2f})")
-                create_cone(target_x,target_y,0,f"{r}",scale=2.0)
+                create_cone(target_x,target_y,0,f"{r}")
                 for i,path in enumerate(option['path']):
                     create_cone(path[0],path[1],0,f"path_cone_{r}_{i}")
-
+                    
+                    
         if commands:
             msg=json.dumps(commands)
             print(msg)
             emitter.send(msg.encode('utf-8'))
             print("sent tasks")
+
