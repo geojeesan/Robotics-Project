@@ -7,15 +7,26 @@ import math
 import numpy as np 
 import random
 from queue import PriorityQueue
+import re 
 
 TIME_STEP=32
 supervisor=Supervisor()
 receiver=supervisor.getDevice("receiver")
 receiver.enable(TIME_STEP)
 emitter=supervisor.getDevice("emitter")
+root_node = supervisor.getRoot()
+children_field = root_node.getField('children')
 # load precomputed .npy file. This will be used across robots
 # want to map trashes and robot positions onto this map. 
-occupancy_grid= np.fliplr(np.load("final_map.npy"))
+occupancy_grid= np.fliplr(np.load("final_map.npy")) 
+# need to spawn multiple robots 
+NUM_ROBOTS=5
+robot_names=[f"youbot_{4+i+1}" for i in range (NUM_ROBOTS)]
+print(robot_names)
+
+
+
+
 
 grid_height, grid_width = occupancy_grid.shape
 # creating a cell:neighbour map
@@ -51,8 +62,7 @@ MAP_ORIGIN_Y = -15
 NUM_BOTTLES=30
 NUM_ROBOTS=4
 # robot_list=[f"youbot_{i+1}" for i in in range(NUM_ROBOTS)]
-root_node = supervisor.getRoot()
-children_field = root_node.getField('children')
+
 
 
 # def create_robots(NUM_ROBOTS):
@@ -81,10 +91,19 @@ num_to_create = min(NUM_BOTTLES, len(assignable_coords))
 chosen = set(random.sample(assignable_coords, num_to_create))
 available_positions= assignable_coords-chosen
 
-def randomise_robot_orientations():
-    youbot_list=["youbot_1","youbot_2","youbot_3","youbot_4"]
-    for robot in youbot_list:
-        robot_node=supervisor.getFromDef(robot)
+def create_robots(NUM_ROBOTS):
+    with open("robot_vrml.txt") as f:
+        vrml_string=f.read()
+    insert_index = children_field.getCount()
+    old_def = "youbot"
+    for robot_name in robot_names:        
+        new_def = robot_name
+        vrml = re.sub(rf'\bDEF\s+{re.escape(old_def)}\b', f"DEF {new_def}", vrml_string, count=1)    
+        children_field.importMFNodeFromString(insert_index, vrml)
+        supervisor.step(64) # step the simulation so we can use the inserted node
+        robot_node=supervisor.getFromDef(robot_name)
+        name=robot_node.getField("name")
+        name.setSFString(robot_name)
         rotation_field=robot_node.getField('rotation')
         random_rotation=np.random.uniform(-math.pi,math.pi)
         rot=[0,0,1,random_rotation]
@@ -93,6 +112,10 @@ def randomise_robot_orientations():
         random_position = random.choice(list(available_positions))
         w_x,w_y= random_position[0],random_position[1]
         trans_field.setSFVec3f([w_x,w_y,0.0986])
+        robot_node.getField("controller").setSFString("youbot_controller_py")
+        robot_node.restartController()
+
+create_robots(5)        
  
 
 def create_bottles(occupancy_grid):

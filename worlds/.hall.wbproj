@@ -8,7 +8,7 @@ centralWidgetVisible: 1
 projectionMode: PERSPECTIVE
 renderingMode: PLAIN
 orthographicViewHeight: 1
-textFiles: 2 "controllers/youbot_controller_py/youbot_controller_py.py" "controllers/task_allocator_v2/task_allocator_v2.py" "worlds/hall.wbt" "../Robotics-Project-2/worlds/hall.wbt"
+textFiles: 1 "controllers/youbot_controller_py/youbot_controller_py.py" "controllers/task_allocator_v2/task_allocator_v2.py" "worlds/hall.wbt" "../Robotics-Project-2/worlds/hall.wbt" "controllers/task_allocator_v2/robot_vrml.txt"
 globalOptionalRendering: LidarRaysPaths::CoordinateSystem::CameraFrustums::RangeFinderFrustums
 centerOfMass: youbot_1
 consoles: Console:All:All

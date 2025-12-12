@@ -8,9 +8,7 @@ import numpy as np
 import math
 import json
 
-# ===============================================================
-# IMPORTS: YOLO & PARTICLE FILTER
-# ===============================================================
+
 from ultralytics import YOLO
 import torch
 try:
@@ -22,9 +20,7 @@ except Exception:
     pass
 from youbot_library import ParticleFilter, ParticleVisualizer
 
-# ===============================================================
-# PARAMETERS
-# ===============================================================
+
 TIME_STEP = 32
 DEBUG_VIEW = True
 
@@ -68,9 +64,7 @@ TRAY_SLOTS = [
 INTERRUPT_TOLERANCE = 1.0
 COLLISION_DIST = 0.40
 
-# ===============================================================
-# INITIALIZATION
-# ===============================================================
+#initialisation
 
 robot = Supervisor()
 robot_name = robot.getName()
@@ -118,6 +112,22 @@ current_vx = 0.0
 current_vy = 0.0
 current_omega = 0.0
 
+# more definitions :)
+
+detected_trash_list = [] 
+accumulated_rotation = 0.0
+last_heading = 0.0
+state = "INIT"
+localization_timer = 0
+collected_bottles = set()
+current_waypoint_index = 0
+path = []
+final_goal_world = (0,0)
+ROTATE_ONLY_TIMEOUT = 2.0
+ROTATION_FORWARD_SPEED = 0.12
+rotation_only_timer = 0.0
+
+
 # Initialize Particle Filter
 print("[INFO] Initializing Particle Filter...")
 try:
@@ -139,9 +149,7 @@ if device == 'cuda':
 yolo = YOLO(YOLO_MODEL)
 yolo.to(device)
 
-# ===============================================================
-# TELEPORT / PICKING LOGIC
-# ===============================================================
+
 
 def find_closest_bottle(robot_node, ignored_ids=None, max_dist=1.0):
     if ignored_ids is None: ignored_ids = set()
@@ -188,9 +196,6 @@ def teleport_bottle_to_back(target_node, robot_node, slot_index=0):
     target_node.getField("translation").setSFVec3f(new_pos)
     target_node.getField("rotation").setSFRotation([0, 0, 1, 0])
 
-# ===============================================================
-# HELPER FUNCTIONS
-# ===============================================================
 
 def normalize_angle(angle):
     while angle > math.pi: angle -= 2 * math.pi
@@ -251,9 +256,8 @@ def create_cone(x, y, z, name=""):
     """
     children_field.importMFNodeFromString(-1, cone_vrml)
 
-# ===============================================================
-# YOLO DETECTION
-# ===============================================================
+
+
 def detect_bottle(image):
     if yolo is None or image is None: return None
     
@@ -315,22 +319,8 @@ def detect_bottle(image):
     return det
 
 
-# ===============================================================
-# MAIN LOOP
-# ===============================================================
+# main loop
 
-detected_trash_list = [] 
-accumulated_rotation = 0.0
-last_heading = 0.0
-state = "INIT"
-localization_timer = 0
-collected_bottles = set()
-current_waypoint_index = 0
-path = []
-final_goal_world = (0,0)
-ROTATE_ONLY_TIMEOUT = 2.0
-ROTATION_FORWARD_SPEED = 0.12
-rotation_only_timer = 0.0
 
 print(f"[{robot_name}] Controller Started.")
     
@@ -350,7 +340,8 @@ while robot.step(TIME_STEP) != -1:
         vis.update(pf.particles, est_x, est_y, pf_theta_est, gps_vals[0], gps_vals[1])
     else:
         est_x, est_y, _ = gps.getValues()
-        # --- NEW: PASSIVE COLLISION COLLECTION ---
+        
+        
     # Check if we are touching any bottle (independent of current State)
     touching_node = find_closest_bottle(robot.getSelf(), collected_bottles, max_dist=COLLISION_DIST)
     
@@ -358,35 +349,32 @@ while robot.step(TIME_STEP) != -1:
         bottle_id = touching_node.getId()
         print(f"[{robot_name}] COLLISION DETECTED! collecting bottle ID {bottle_id}")
         
-        # 1. Teleport Bottle
+        # Teleporting because arm logic is very tough to implement. 
         teleport_bottle_to_back(touching_node, robot.getSelf(), len(collected_bottles))
         collected_bottles.add(bottle_id)
         
-        # 2. Remove from internal memory (so we don't try to go to it later)
-        # We filter the list to keep only trashes that are NOT close to the collected one
-        # (This prevents ghost targets)
+
         bx, by, _ = touching_node.getPosition()
         detected_trash_list = [
             t for t in detected_trash_list 
             if math.hypot(t['x'] - bx, t['y'] - by) > 0.6
         ]
 
-        # 3. Notify Supervisor (Update global map)
+        # 3. Notify Supervisor 
         current_heading = get_heading()
         payload = {
             "robot": robot_name,
             "pose": {"x": est_x, "y": est_y, "theta": current_heading},
-            "trash_world_coords": [], # No new trash seen, just status update
+            "trash_world_coords": [], # No new trash seen
             "status": "WAITING" 
         }
         
-        # Note: We send this to ensure the supervisor knows we are still alive/active
-        emitter.send(json.dumps(payload).encode('utf-8'))
-        state="WAITING"
 
-    # -----------------------------------------------------------
-    # 2. STATE MACHINE
-    # -----------------------------------------------------------
+        emitter.send(json.dumps(payload).encode('utf-8'))
+        state="WAITING" # so now it waits for new assignments. 
+
+
+# STATE MACHINE:
 
     if state == "INIT":
         localization_timer += 1
@@ -515,7 +503,7 @@ while robot.step(TIME_STEP) != -1:
             heading_error = normalize_angle(target_angle - theta)
     
             # --- arrival / waypoint advance ---
-            if distance < ARRIVE_DIST:   # use ARRIVE_DIST constant you set earlier (0.15)
+            if distance < ARRIVE_DIST:
                 current_waypoint_index += 3
                 if current_waypoint_index >= len(path):
                     print(f"[{robot_name}] Reached end of waypoints (index {current_waypoint_index} / {len(path)}). Switching to Visual Servoing.")
