@@ -54,7 +54,6 @@ TRAY_SLOTS = [
     (-0.1,  0.1), (-0.1,  0.0), (-0.1, -0.1)
 ]
 
-INTERRUPT_TOLERANCE = 1.0
 COLLISION_DIST = 0.40
 
 robot = Supervisor()
@@ -110,6 +109,10 @@ final_goal_world = (0,0)
 ROTATE_ONLY_TIMEOUT = 2.0
 ROTATION_FORWARD_SPEED = 0.12
 rotation_only_timer = 0.0
+
+visual_from_path = False
+visual_rotation_accum = 0.0
+visual_last_heading = 0.0
 
 print("[INFO] Initializing Particle Filter...")
 try:
@@ -201,26 +204,6 @@ def get_heading():
     heading = math.atan2(f_wy, f_wx)
     return normalize_angle(heading)
 
-def create_cone(x, y, z, name=""):
-    root_node = robot.getRoot()
-    r_name = robot.getName()
-    robot_color = {"youbot_1":(1,0,0), "youbot_2":(0,1,0), "youbot_3":(0,0,1), "youbot_4":(1,1,0)}
-    r, g, b = robot_color.get(r_name, (1,1,1))
-    children_field = root_node.getField('children')
-    cone_vrml = f"""
-    DEF {name} Solid {{
-      translation {x} {y} {z}
-      children [
-        Shape {{
-          appearance PBRAppearance {{ baseColor {r} {g} {b} roughness 1 metalness 0 transparency 0.5 }}
-          geometry Cone {{ bottomRadius 0.05 height 0.3 }}
-        }}
-      ]
-      name "{name}"
-    }}
-    """
-    children_field.importMFNodeFromString(-1, cone_vrml)
-
 def detect_bottle(image):
     if yolo is None or image is None: return None
     frame = np.frombuffer(image, np.uint8).reshape((cam_h, cam_w, 4))
@@ -282,7 +265,7 @@ while robot.step(TIME_STEP) != -1:
                 task_queue.append(task)
         except Exception:
             pass
-
+    # use pf if enabled. issues with locaisation if we use raw pf. helped with GPS. 
     if pf_active:
         dt = TIME_STEP / 1000.0
         if abs(current_vx) > 0.01 or abs(current_vy) > 0.01 or abs(current_omega) > 0.01:
@@ -296,6 +279,7 @@ while robot.step(TIME_STEP) != -1:
         est_x, est_y, _ = gps.getValues()
 
     touching_node = find_closest_bottle(robot.getSelf(), collected_bottles, max_dist=COLLISION_DIST)
+    # At any point if the robot touches trash, just pick it up and wait for a new assignment. 
     if touching_node:
         bottle_id = touching_node.getId()
         print(f"[{robot_name}] COLLISION DETECTED! collecting bottle ID {bottle_id}")
@@ -317,6 +301,7 @@ while robot.step(TIME_STEP) != -1:
         state = "WAITING"
 
     if state == "INIT":
+    # every robot starts here and goes to scanning 
         localization_timer += 1
         base_move(0, 0, 0)
         if localization_timer > 40:
@@ -335,6 +320,7 @@ while robot.step(TIME_STEP) != -1:
         last_heading = current_heading
         if robot.getTime() % 0.5 < 0.05:
             print(f"[{robot_name}] Scan: {(accumulated_rotation/(2*math.pi))*100:.2f}% completed")
+        # keep scanning for trash until rot limit reached
         if image:
             detection = detect_bottle(image)
             if detection:
@@ -344,23 +330,21 @@ while robot.step(TIME_STEP) != -1:
                 idx_y = min(max(0, center_y), rf_h - 1)
                 rf_index = int(idx_y * rf_w + idx_x)
                 raw_dist = rf_data[rf_index]
-                if raw_dist != float('inf') and raw_dist < 3:
+                if raw_dist != float('inf') and raw_dist < 3: # limit range of acceptance because distance estimation accuracy decreases with increase in distance
                     fov = camera.getFov()
                     offset_angle = -1 * ((center_x / cam_w) - 0.5) * fov
                     heading = get_heading()
-                    total_angle = heading + offset_angle
+                    total_angle = heading + offset_angle # try both + and -
                     rot = robot.getSelf().getOrientation()
-                    R00, R01 = rot[0], rot[1]
-                    R10, R11 = rot[3], rot[4]
                     cam_dx, cam_dy, _ = CAMERA_OFFSET
-                    sensor_world_x = est_x + (R00 * cam_dx + R01 * cam_dy)
-                    sensor_world_y = est_y + (R10 * cam_dx + R11 * cam_dy)
+                    sensor_world_x = est_x + (rot[0] * cam_dx + rot[1] * cam_dy)
+                    sensor_world_y = est_y + (rot[3] * cam_dx + rot[4] * cam_dy)
                     obj_world_x = sensor_world_x + raw_dist * math.cos(total_angle)
                     obj_world_y = sensor_world_y + raw_dist * math.sin(total_angle)
                     is_new = True
                     for trash in detected_trash_list:
                         d = math.sqrt((trash['x'] - obj_world_x)**2 + (trash['y'] - obj_world_y)**2)
-                        if d < 0.6:
+                        if d < 0.6: # new trashes must be 60cm apart to be detected as new. otherwise its the same thing detected at a different time. 
                             is_new = False
                             break
                     if is_new:
@@ -386,6 +370,7 @@ while robot.step(TIME_STEP) != -1:
         print(state)
 
     elif state == "WAITING":
+    # wait for supervisor allocaiton.
         base_stop()
         if task_queue:
             task = task_queue.pop(0)
@@ -412,20 +397,26 @@ while robot.step(TIME_STEP) != -1:
             heading_error = normalize_angle(target_angle - theta)
             if distance < ARRIVE_DIST:
                 current_waypoint_index += 3
+                # Check if this was the last set of points
                 if current_waypoint_index >= len(path):
                     print(f"[{robot_name}] Reached end of waypoints (index {current_waypoint_index} / {len(path)}). Switching to Visual Servoing.")
                     base_stop()
                     state = "VISUAL_SERVOING"
+                    # Enable rotation search if nothing seen immediately
+                    visual_from_path = True
+                    visual_rotation_accum = 0.0
+                    visual_last_heading = get_heading()
                     rotation_only_timer = 0.0
                     continue
                 rotation_only_timer = 0.0
                 continue
+            
             vx_cmd = 0.0
             omega_cmd = 0.0
             if abs(heading_error) > 0.15:
                 omega_cmd = KP_ANG * heading_error
                 vx_cmd = 0.0
-                rotation_only_timer += (TIME_STEP / 1000.0)
+                rotation_only_timer += dt
                 if rotation_only_timer >= ROTATE_ONLY_TIMEOUT:
                     print(f"[{robot_name}] Rotation watchdog triggered (headed {heading_error:.2f} rad). attempting recovery.")
                     vx_cmd = ROTATION_FORWARD_SPEED
@@ -443,12 +434,21 @@ while robot.step(TIME_STEP) != -1:
             print(f"[{robot_name}] Path Complete. Switching to Visual Servoing.")
             base_stop()
             state = "VISUAL_SERVOING"
-            print("[{robot_name}] {state}")
+            visual_from_path = True
+            visual_rotation_accum = 0.0
+            visual_last_heading = get_heading()
+            print(f"[{robot_name}] {state}")
 
     elif state == "VISUAL_SERVOING":
         if image:
             detection = detect_bottle(image)
             if detection:
+                # If bottle detected, STOP any active path-completion rotation and pick it up
+                if visual_from_path:
+                    visual_from_path = False
+                    visual_rotation_accum = 0.0
+                    visual_last_heading = 0.0
+                
                 visual_lost_timer = 0.0
                 cx, cy, area = detection
                 if area > PICKUP_AREA_THRESHOLD:
@@ -459,44 +459,90 @@ while robot.step(TIME_STEP) != -1:
                 else:
                     err_x = (cx / cam_w) - 0.5
                     omega = -err_x * 2.0
-                    vx = 0.7
+                    vx = 0.5
                     base_move(vx, 0, omega)
             else:
-                visual_lost_timer += dt
-                if visual_lost_timer >= VISUAL_LOST_TIMEOUT:
-                    print(f"[{robot_name}] Searching for target (Spinning)...")
-                    visual_lost_timer = 0.0
-                    accumulated_rotation = 0.0
-                    last_heading = get_heading()
-                    base_move(0, 0, 1)
-                    state = "SCANNING"
+                # No bottle detected
+                if visual_from_path:
+                    # We are in the "rotate in place at end of path" mode
+                    current_heading = get_heading()
+                    delta = current_heading - visual_last_heading
+                    if delta > math.pi: delta -= 2*math.pi
+                    elif delta < -math.pi: delta += 2*math.pi
+                    visual_rotation_accum += abs(delta)
+                    visual_last_heading = current_heading
+                    
+                    if visual_rotation_accum < 2 * math.pi:
+                        base_move(0, 0, 1.0) # Rotate in place
+                    else:
+                        # Full rotation done, nothing found
+                        visual_from_path = False
+                        visual_rotation_accum = 0.0
+                        visual_last_heading = 0.0
+                        base_stop()
+                        state = "SCANNING"
+                        accumulated_rotation = 0.0
+                        last_heading = get_heading()
+                        print(f"[{robot_name}] Visual Search (post-path) complete. Nothing found. Switching to SCANNING.")
+                else:
+                    # Standard visual servoing lost timer
+                    visual_lost_timer += dt
+                    if visual_lost_timer >= VISUAL_LOST_TIMEOUT:
+                        print(f"[{robot_name}] Searching for target (Spinning)...")
+                        visual_lost_timer = 0.0
+                        accumulated_rotation = 0.0
+                        last_heading = get_heading()
+                        base_move(0, 0, 1)
+                        state = "SCANNING"
 
     elif state == "PICKING":
         print(f"[{robot_name}] Attempting to teleport/pick bottle...")
-        target_node = find_closest_bottle(robot.getSelf(), collected_bottles, max_dist=1.0)
-        if target_node:
-            teleport_bottle_to_back(target_node, robot.getSelf(), len(collected_bottles))
-            collected_bottles.add(target_node.getId())
-            print(f"[{robot_name}] SUCCESS: Collected bottle ID {target_node.getId()}")
-            current_heading = get_heading()
-            payload = {
-                "robot": robot_name,
-                "pose": {"x": est_x, "y": est_y, "theta": current_heading},
-                "trash_world_coords": [],
-                "status": "WAITING"
-            }
-            emitter.send(json.dumps(payload).encode('utf-8'))
-        else:
-            print(f"[{robot_name}] FAILED: No physical bottle found.")
-            current_heading = get_heading()
-            payload = {
-                "robot": robot_name,
-                "pose": {"x": est_x, "y": est_y, "theta": current_heading},
-                "trash_world_coords": [],
-                "status": "WAITING"
-            }
-            emitter.send(json.dumps(payload).encode('utf-8'))
-        for _ in range(10): robot.step(TIME_STEP)
-        state = "WAITING"
+        
+        # tolerance mechanism: Try up to 3 times
+        # If the visual servoing stopped us 1.01m away, the physical check (1.0m) would fail.
+        # This loop tries to find it, and if it fails, moves forward slightly and tries again.
+        bottle_found = False
+        
+        for attempt in range(3):
+            # Increased max_dist slightly to 1.2 to be more forgiving
+            target_node = find_closest_bottle(robot.getSelf(), collected_bottles, max_dist=1.2)
+            
+            if target_node:
+                # --- SUCCESS CASE ---
+                teleport_bottle_to_back(target_node, robot.getSelf(), len(collected_bottles))
+                collected_bottles.add(target_node.getId())
+                print(f"[{robot_name}] SUCCESS: Collected bottle ID {target_node.getId()}")
+                
+                current_heading = get_heading()
+                payload = {
+                    "robot": robot_name,
+                    "pose": {"x": est_x, "y": est_y, "theta": current_heading},
+                    "trash_world_coords": [],
+                    "status": "WAITING"
+                }
+                emitter.send(json.dumps(payload).encode('utf-8'))
+                
+                #  Change state immediately so we don't loop back and fail
+                state = "WAITING"
+                bottle_found = True
+                break 
+            
+            else:
+                # Retrying..
+                if attempt < 2:
+                    print(f"[{robot_name}] Visual pick triggered, but physics says too far. Inching forward (Attempt {attempt+1})...")
+                    base_move(0.15, 0, 0) # Move forward slowly (blind)
+                    for _ in range(15): robot.step(TIME_STEP) # Wait a bit
+                    base_stop()
+        
+        # Only switch to SCANNING if all attempts failed
+        if not bottle_found:
+            print(f"[{robot_name}] FAILED: No physical bottle found after retries.")
+            print(f"[{robot_name}] switching to searching.")                        
+            accumulated_rotation = 0.0
+            last_heading = get_heading()
+            base_move(0, 0, 1)
+            state = "SCANNING"
+
 
 cv2.destroyAllWindows()

@@ -108,8 +108,12 @@ def create_robots(NUM_ROBOTS):
         random_position = random.choice(list(available_positions))
         w_x,w_y= random_position[0],random_position[1]
         trans_field.setSFVec3f([w_x,w_y,0.0986])
+    for robot_name in robot_names:
+   # start controllers after loading robots. 
+        robot_node=supervisor.getFromDef(robot_name)
         robot_node.getField("controller").setSFString("youbot_controller_py")
         robot_node.restartController()
+
 
 create_robots(5)        
  
